@@ -7,6 +7,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Added Babel for in-browser JSX transpilation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Load React and ReactDOM globally -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
@@ -128,10 +131,7 @@
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "@google/genai": "https://esm.run/@google/genai",
-    "@vercel/analytics/react": "https://esm.run/@vercel/analytics/react"
+    "@google/genai": "https://esm.run/@google/genai"
   }
 }
 </script>
@@ -139,10 +139,10 @@
 <body class="text-gray-800">
   <div id="root"></div>
   <script type="text/babel" data-type="module">
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import ReactDOM from 'react-dom/client';
+// React and ReactDOM are loaded globally via script tags.
+const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
 import { GoogleGenAI } from "@google/genai";
-import { Analytics } from "@vercel/analytics/react";
 
 // Formerly types.ts
 const Tab = {
@@ -2055,7 +2055,6 @@ const App = () => {
             )}
             <FloatingActionButton onClick={() => setIsChatOpen(true)} />
             <GeminiChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} apiKey={apiKey} setActiveTab={setActiveTab} />
-            <Analytics />
         </div>
     );
 };
