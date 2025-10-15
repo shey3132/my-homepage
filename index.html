@@ -993,7 +993,41 @@ const ShortcutGroupManager = ({ groups, setGroups }) => {
         </>
     )
 };
-const PersonalPanel = () => {
+const ApiKeyManager = ({ apiKey, setApiKey }) => {
+    const [tempKey, setTempKey] = useState(apiKey || '');
+
+    const handleSave = () => {
+        setApiKey(tempKey.trim());
+        alert('מפתח API נשמר!');
+    };
+
+    return (
+        <>
+            <h3 className="text-xl font-bold mt-3 mb-2 text-right">ניהול מפתח API של Gemini</h3>
+            <Card className="text-right">
+                <p className="text-sm mb-3" style={{color: 'var(--text-secondary)'}}>
+                    כדי להשתמש בעוזר ה-AI, עליך לספק מפתח API אישי של Google Gemini. 
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{color: 'var(--accent-primary)'}}>
+                        {' '}לחץ כאן כדי לקבל מפתח.
+                    </a>
+                </p>
+                <div className="flex gap-2 items-center">
+                    <Input 
+                        type="password"
+                        value={tempKey} 
+                        onChange={(e) => setTempKey(e.target.value)} 
+                        placeholder="הדבק את מפתח ה-API שלך כאן" 
+                    />
+                    <MainButton onClick={handleSave}>שמור מפתח</MainButton>
+                </div>
+                <p className="text-xs mt-2" style={{color: 'var(--text-secondary)'}}>
+                    הערה: המפתח נשמר באופן מקומי בדפדפן שלך בלבד.
+                </p>
+            </Card>
+        </>
+    );
+};
+const PersonalPanel = ({ apiKey, setApiKey }) => {
     const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
     const [shortcutGroups, setShortcutGroups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
 
@@ -1006,6 +1040,7 @@ const PersonalPanel = () => {
             <div className="flex-1 min-w-[260px]">
                 <AdvancedShortcuts shortcuts={shortcuts} setShortcuts={setShortcuts} groups={shortcutGroups} />
                 <ShortcutGroupManager groups={shortcutGroups} setGroups={setShortcutGroups} />
+                <ApiKeyManager apiKey={apiKey} setApiKey={setApiKey} />
             </div>
         </div>
     );
@@ -1240,7 +1275,7 @@ const HelpPanel = () => {
         <ul className="list-disc pr-5 space-y-2" style={{color: 'var(--text-secondary)'}}>
           <li><b>דף הבית:</b> המקום המרכזי שלכם. כאן תוכלו לחפש בגוגל, להוסיף קיצורי דרך, ולנהל את הקישורים שלכם.</li>
           <li><b>כלים:</b> גישה מהירה למחשבון, סטופר/טיימר ומתרגם של גוגל.</li>
-          <li><b>אישי:</b> המרחב הפרטי שלכם. רשמו פתקים, נהלו רשימת משימות, וארגנו את הקישורים והקבוצות שלכם.</li>
+          <li><b>אישי:</b> המרחב הפרטי שלכם. רשמו פתקים, נהלו רשימת משימות, וארגנו את הקישורים והקבוצות שלכם. כאן גם תוכלו להזין מפתח API אישי כדי להפעיל את עוזר הבינה המלאכותית.</li>
           <li><b>היסטוריה:</b> צפו ומחקו את היסטוריית החיפושים שלכם בגוגל שבוצעו דרך הדשבורד.</li>
           <li><b>עיצוב:</b> התאימו את הדשבורד בדיוק לטעמכם! שנו פריסה, סגנון, ערכת נושא, פונט ורקע.</li>
           <li><b>מפה, חדשות, מוזיקה:</b> לשוניות ייעודיות עם אתרים פופולריים בתחומים אלו, מוצגים ישירות בתוך הדשבורד.</li>
@@ -1263,9 +1298,9 @@ const HelpPanel = () => {
       <Card className="text-right">
         <h3 className="text-xl font-bold mb-2">עוזר AI (בינה מלאכותית)</h3>
         <p style={{color: 'var(--text-secondary)'}}>
-          כפתור הכוכבים הצף בפינה השמאלית התחתונה פותח חלון צ'אט עם עוזר AI של Google (Gemini).
+          כפתור הכוכבים הצף בפינה השמאלית התחתונה פותח חלון צ'אט עם עוזר AI של Google (Gemini). כדי להפעיל אותו, יש להזין מפתח API אישי בלשונית "אישי".
           <br/>
-          אתם יכולים לשאול שאלות, לבקש סיכומים, לקבל עזרה עם כתיבה, ועוד. העוזר מופעל אוטומטית ומוכן לשימוש.
+          לאחר ההפעלה, תוכלו לשאול שאלות, לבקש סיכומים, לקבל עזרה עם כתיבה, ועוד.
         </p>
       </Card>
       
@@ -1438,7 +1473,7 @@ const FloatingActionButton = ({ onClick }) => (
     </button>
 );
 
-const GeminiChat = ({ isOpen, onClose }) => {
+const GeminiChat = ({ isOpen, onClose, apiKey, setActiveTab }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -1446,20 +1481,18 @@ const GeminiChat = ({ isOpen, onClose }) => {
     const messagesEndRef = useRef(null);
 
     const ai = useMemo(() => {
-        if (typeof process === 'undefined' || !process.env || !process.env.API_KEY) {
-            setError('מפתח ה-API אינו מוגדר.');
-            console.error("Gemini API Key is not configured in the environment.");
+        if (!apiKey) {
             return null;
         }
         try {
             setError('');
-            return new GoogleGenAI({ apiKey: process.env.API_KEY });
+            return new GoogleGenAI({ apiKey: apiKey });
         } catch (e) {
             console.error("Failed to initialize GoogleGenAI:", e);
             setError('אירעה שגיאה בעת אתחול ה-AI.');
             return null;
         }
-    }, []);
+    }, [apiKey]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1496,6 +1529,11 @@ const GeminiChat = ({ isOpen, onClose }) => {
             setIsLoading(false);
         }
     };
+    
+    const handleGoToSettings = () => {
+        setActiveTab(Tab.Personal);
+        onClose();
+    };
 
     if (!isOpen) return null;
 
@@ -1503,11 +1541,13 @@ const GeminiChat = ({ isOpen, onClose }) => {
         if (!ai) {
             return (
                 <div className="flex-1 p-6 flex flex-col justify-center items-center text-center">
-                    <h4 className="text-xl font-bold mb-3">עוזר AI לא זמין</h4>
-                    <p style={{color: 'var(--text-secondary)'}}>
-                        לא ניתן היה לאתחל את עוזר הבינה המלאכותית. ייתכן שהדבר נובע מתצורת מפתח API חסרה.
+                    <h4 className="text-xl font-bold mb-3">נדרש מפתח API</h4>
+                    <p className="mb-4" style={{color: 'var(--text-secondary)'}}>
+                        כדי להפעיל את עוזר ה-AI, יש להגדיר מפתח API של Google Gemini בלשונית "אישי".
                     </p>
-                    {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
+                    <MainButton onClick={handleGoToSettings}>
+                        עבור להגדרות
+                    </MainButton>
                 </div>
             );
         }
@@ -1586,6 +1626,7 @@ const App = () => {
     const [skin, setSkin] = useLocalStorage('dashboard_skin_v1', 'modern');
     const [layout, setLayout] = useLocalStorage('dashboard_layout_v1', 'classic');
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [apiKey, setApiKey] = useLocalStorage('dashboard_gemini_api_key_v1', '');
 
     // --- Data Migration ---
     useEffect(() => {
@@ -1649,7 +1690,7 @@ const App = () => {
             <main className="flex-1">
                 <Panel id={Tab.Home} activeTab={activeTab}><HomePanel setActiveTab={setActiveTab} /></Panel>
                 <Panel id={Tab.Tools} activeTab={activeTab}><ToolsPanel /></Panel>
-                <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel /></Panel>
+                <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel apiKey={apiKey} setApiKey={setApiKey} /></Panel>
                 <Panel id={Tab.History} activeTab={activeTab}><HistoryPanel /></Panel>
                 <Panel id={Tab.Design} activeTab={activeTab}><DesignPanel setFont={setFont} setBackground={setBackground} themeName={themeName} setThemeName={setThemeName} skin={skin} setSkin={setSkin} layout={layout} setLayout={setLayout} /></Panel>
                 <Panel id={Tab.Map} activeTab={activeTab}><MapPanel /></Panel>
@@ -1677,7 +1718,7 @@ const App = () => {
                 </>
             )}
             <FloatingActionButton onClick={() => setIsChatOpen(true)} />
-            <GeminiChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+            <GeminiChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} apiKey={apiKey} setActiveTab={setActiveTab} />
         </div>
     );
 };
