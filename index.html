@@ -121,6 +121,7 @@
     .dragging {
       opacity: 0.5;
       transform: scale(0.98);
+      cursor: grabbing;
     }
 
   </style>
@@ -1027,10 +1028,7 @@ const ApiKeyManager = ({ apiKey, setApiKey }) => {
         </>
     );
 };
-const PersonalPanel = ({ apiKey, setApiKey }) => {
-    const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
-    const [shortcutGroups, setShortcutGroups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
-
+const PersonalPanel = ({ apiKey, setApiKey, shortcuts, setShortcuts, shortcutGroups, setShortcutGroups }) => {
     return (
         <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 min-w-[260px]">
@@ -1045,7 +1043,7 @@ const PersonalPanel = ({ apiKey, setApiKey }) => {
         </div>
     );
 };
-const DesignPanel = ({ setFont, setBackground, themeName, setThemeName, skin, setSkin, layout, setLayout }) => {
+const DesignPanel = ({ setFont, setBackground, themeName, setThemeName, skin, setSkin, layout, setLayout, homeLayoutOrder, setHomeLayoutOrder }) => {
     const handleBgUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -1077,6 +1075,25 @@ const DesignPanel = ({ setFont, setBackground, themeName, setThemeName, skin, se
                                 <span className="font-bold block" style={{color: 'var(--text-primary)'}}>{l.name}</span>
                             </button>
                         ))}
+                    </div>
+                </Card>
+                 <h3 className="text-xl font-bold mt-3 mb-2 text-right">פריסת דף הבית</h3>
+                <Card>
+                    <div className="grid grid-cols-2 gap-3">
+                         <button
+                            onClick={() => setHomeLayoutOrder('shortcuts-left')}
+                            className={`p-3 text-center rounded-lg transition-all duration-200 border-2 ${homeLayoutOrder === 'shortcuts-left' ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-card)] ring-[var(--accent-primary)]' : 'border-transparent hover:border-[var(--border-color)]'}`}
+                            style={{ backgroundColor: 'var(--bg-input)', borderColor: homeLayoutOrder === 'shortcuts-left' ? 'var(--accent-primary)' : 'transparent'}}
+                        >
+                            <span className="font-bold block" style={{color: 'var(--text-primary)'}}>קישורים | לוח שנה</span>
+                        </button>
+                        <button
+                            onClick={() => setHomeLayoutOrder('calendar-left')}
+                            className={`p-3 text-center rounded-lg transition-all duration-200 border-2 ${homeLayoutOrder === 'calendar-left' ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-card)] ring-[var(--accent-primary)]' : 'border-transparent hover:border-[var(--border-color)]'}`}
+                            style={{ backgroundColor: 'var(--bg-input)', borderColor: homeLayoutOrder === 'calendar-left' ? 'var(--accent-primary)' : 'transparent'}}
+                        >
+                            <span className="font-bold block" style={{color: 'var(--text-primary)'}}>לוח שנה | קישורים</span>
+                        </button>
                     </div>
                 </Card>
                 <h3 className="text-xl font-bold mt-3 mb-2 text-right">סגנון עיצוב</h3>
@@ -1273,11 +1290,11 @@ const HelpPanel = () => {
       <Card className="text-right">
         <h3 className="text-xl font-bold mb-2">תכונות עיקריות</h3>
         <ul className="list-disc pr-5 space-y-2" style={{color: 'var(--text-secondary)'}}>
-          <li><b>דף הבית:</b> המקום המרכזי שלכם. כאן תוכלו לחפש בגוגל, להוסיף קיצורי דרך, ולנהל את הקישורים שלכם.</li>
+          <li><b>דף הבית:</b> המקום המרכזי שלכם. כאן תוכלו לחפש בגוגל ולהוסיף קיצורי דרך. <b>כדי לסדר מחדש את הקישורים האישיים שהוספתם, פשוט לחצו, גררו ושחררו אותם למיקום הרצוי בתוך אותה קבוצה.</b> (הערה: לא ניתן לשנות את סדר קיצורי הדרך המובנים).</li>
           <li><b>כלים:</b> גישה מהירה למחשבון, סטופר/טיימר ומתרגם של גוגל.</li>
           <li><b>אישי:</b> המרחב הפרטי שלכם. רשמו פתקים, נהלו רשימת משימות, וארגנו את הקישורים והקבוצות שלכם. כאן גם תוכלו להזין מפתח API אישי כדי להפעיל את עוזר הבינה המלאכותית.</li>
           <li><b>היסטוריה:</b> צפו ומחקו את היסטוריית החיפושים שלכם בגוגל שבוצעו דרך הדשבורד.</li>
-          <li><b>עיצוב:</b> התאימו את הדשבורד בדיוק לטעמכם! שנו פריסה, סגנון, ערכת נושא, פונט ורקע.</li>
+          <li><b>עיצוב:</b> התאימו את הדשבורד בדיוק לטעמכם! שנו פריסה, סגנון, ערכת נושא, פונט, רקע, ואת סידור דף הבית.</li>
           <li><b>מפה, חדשות, מוזיקה:</b> לשוניות ייעודיות עם אתרים פופולריים בתחומים אלו, מוצגים ישירות בתוך הדשבורד.</li>
         </ul>
       </Card>
@@ -1289,6 +1306,7 @@ const HelpPanel = () => {
         </p>
         <ul className="list-disc pr-5 mt-2 space-y-1" style={{color: 'var(--text-secondary)'}}>
           <li><b>פריסת עמוד:</b> בחרו בין תפריט צד קלאסי לתפריט עליון מודרני.</li>
+          <li><b>פריסת דף הבית:</b> בחרו אם להציג את לוח השנה בצד ימין או שמאל.</li>
           <li><b>סגנון עיצוב:</b> 'מודרני' עם אפקטים, 'מינימליסטי' נקי, או 'נאומורפי' עם תחושת תלת-ממד.</li>
           <li><b>ערכות נושא:</b> בחרו ערכת צבעים מוכנה מראש (בהיר, כהה, אוקיינוס ועוד).</li>
           <li><b>רקעים:</b> העלו תמונה משלכם, בחרו מתוך מבחר מוגדר, או קבלו רקע אקראי.</li>
@@ -1304,6 +1322,18 @@ const HelpPanel = () => {
         </p>
       </Card>
       
+      <Card className="text-right">
+        <h3 className="text-xl font-bold mb-2">לוח שנה עברי ואירועים</h3>
+        <p style={{color: 'var(--text-secondary)'}}>
+          לוח השנה בדף הבית מציג תאריכים לועזיים ועבריים זה לצד זה, ומסמן חגים ומועדים.
+          <br/>
+          תוכלו להוסיף אירועים אישיים לכל יום על ידי לחיצה עליו. בחלון שייפתח, הזינו את תוכן האירוע ולחצו "הוסף".
+          ניתן להוסיף מספר אירועים לכל יום.
+          <br/>
+          כל האירועים נשמרים באופן פרטי בדפדפן שלכם בלבד.
+        </p>
+      </Card>
+      
        <Card className="text-right">
         <h3 className="text-xl font-bold mb-2">פרטיות ונתונים</h3>
         <p style={{color: 'var(--text-secondary)'}}>
@@ -1315,9 +1345,248 @@ const HelpPanel = () => {
 };
 
 // Formerly components/HomePanel.tsx
+const HOLIDAYS = {
+    '2024-04-22': 'ערב פסח', '2024-04-23': 'פסח', '2024-04-29': 'שביעי של פסח',
+    '2024-05-06': 'יום השואה', '2024-05-13': 'יום הזיכרון','2024-05-14': 'יום העצמאות',
+    '2024-05-26': 'ל"ג בעומר', '2024-06-05': 'יום ירושלים', '2024-06-11': 'ערב שבועות',
+    '2024-06-12': 'שבועות', '2024-08-13': 'תשעה באב', '2024-10-02': 'ערב ראש השנה',
+    '2024-10-03': 'ראש השנה', '2024-10-04': 'ראש השנה', '2024-10-11': 'ערב יום כיפור',
+    '2024-10-12': 'יום כיפור', '2024-10-16': 'ערב סוכות', '2024-10-17': 'סוכות',
+    '2024-10-23': 'שמיני עצרת', '2024-10-24': 'שמחת תורה', '2024-12-26': 'חנוכה',
+    '2025-03-14': 'פורים', '2025-04-13': 'פסח', '2025-04-19': 'שביעי של פסח',
+    '2025-04-24': 'יום השואה', '2025-04-30': 'יום הזיכרון', '2025-05-01': 'יום העצמאות',
+    '2025-05-16': 'ל"ג בעומר', '2025-05-25': 'יום ירושלים', '2025-06-02': 'שבועות',
+};
+const numberToHebrew = (num, geresh = true) => {
+    if (typeof num !== 'number' || isNaN(num) || num <= 0) return '';
+    if (num >= 10000) return num.toString();
+
+    if (num >= 1000) {
+        const thousands = Math.floor(num / 1000);
+        const rest = num % 1000;
+        return (thousands > 0 ? numberToHebrew(thousands, false) + "'" : '') + numberToHebrew(rest, false);
+    }
+    
+    const gematria = {
+        1:'א', 2:'ב', 3:'ג', 4:'ד', 5:'ה', 6:'ו', 7:'ז', 8:'ח', 9:'ט',
+        10:'י', 20:'כ', 30:'ל', 40:'מ', 50:'נ', 60:'ס', 70:'ע', 80:'פ', 90:'צ',
+        100:'ק', 200:'ר', 300:'ש', 400:'ת'
+    };
+
+    let n = num;
+    let heb = '';
+
+    for (let i = 400; i >= 100; i -= 100) {
+        if (n >= i) {
+            heb += gematria[i];
+            n -= i;
+        }
+    }
+
+    if (n === 15) { heb += 'טו'; n = 0; }
+    if (n === 16) { heb += 'טז'; n = 0; }
+    
+    if (n >= 10) {
+        const ten = Math.floor(n / 10) * 10;
+        heb += gematria[ten];
+        n %= 10;
+    }
+
+    if (n > 0) {
+        heb += gematria[n];
+    }
+    
+    if (geresh) {
+        if (heb.length > 1) {
+            heb = heb.slice(0, -1) + '"' + heb.slice(-1);
+        } else if (heb.length === 1) {
+            heb += "'";
+        }
+    }
+
+    return heb;
+};
+const EventModal = ({ date, events, onClose, onAddEvent, onDeleteEvent }) => {
+    const [newEventText, setNewEventText] = useState('');
+    if (!date) return null;
+
+    const gregorianFormatter = new Intl.DateTimeFormat('he-IL', { dateStyle: 'full' });
+    
+    const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const parts = hebrewFormatter.formatToParts(date);
+    const weekday = parts.find(p => p.type === 'weekday')?.value || '';
+    const day = parts.find(p => p.type === 'day')?.value || '';
+    const month = parts.find(p => p.type === 'month')?.value || '';
+    const year = parts.find(p => p.type === 'year')?.value || '';
+
+    const dayInLetters = day ? numberToHebrew(parseInt(day, 10)) : '';
+    const yearInLetters = year ? numberToHebrew(parseInt(year, 10)) : '';
+    const fullHebrewDateString = `${weekday}, ${dayInLetters} ${month} ${yearInLetters}`;
+
+    const handleAdd = (e) => {
+        e.preventDefault();
+        if (newEventText.trim()) {
+            onAddEvent(newEventText.trim());
+            setNewEventText('');
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
+            <div 
+                className="card-style w-full max-w-md p-6 m-4 text-right relative" 
+                style={{ backgroundColor: 'var(--bg-card)' }} 
+                onClick={e => e.stopPropagation()}
+            >
+                <button onClick={onClose} className="absolute top-3 left-3 text-2xl hover:opacity-70">&times;</button>
+                <h3 className="text-xl font-bold mb-2">אירועים ליום</h3>
+                <p className="font-semibold text-lg" style={{color: 'var(--accent-primary)'}}>{gregorianFormatter.format(date)}</p>
+                <p className="mb-4 text-md" style={{color: 'var(--text-secondary)'}}>{fullHebrewDateString}</p>
+                
+                <div className="max-h-40 overflow-y-auto mb-4 space-y-2 pr-2">
+                    {events.length > 0 ? events.map((event, index) => (
+                        <div key={index} className="flex justify-between items-center p-2 rounded" style={{backgroundColor: 'var(--bg-input)'}}>
+                            <span className="flex-grow">{event}</span>
+                            <button onClick={() => onDeleteEvent(index)} className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors mr-2">✖</button>
+                        </div>
+                    )) : <p style={{color: 'var(--text-secondary)'}}>אין אירועים שמורים ליום זה.</p>}
+                </div>
+                <form onSubmit={handleAdd} className="flex gap-2 border-t pt-4" style={{borderColor: 'var(--border-color)'}}>
+                    <Input 
+                        value={newEventText} 
+                        onChange={e => setNewEventText(e.target.value)} 
+                        placeholder="הוסף אירוע חדש..." 
+                        aria-label="טקסט אירוע חדש"
+                    />
+                    <MainButton type="submit">הוסף</MainButton>
+                </form>
+            </div>
+        </div>
+    );
+};
+const HebrewCalendar = () => {
+    const [viewDate, setViewDate] = useState(new Date());
+    const [events, setEvents] = useLocalStorage('dashboard_calendar_events_v1', {});
+    const [selectedDate, setSelectedDate] = useState(null);
+    
+    const formatDateISO = (date) => date.toISOString().split('T')[0];
+
+    const calendarData = useMemo(() => {
+        const year = viewDate.getFullYear();
+        const month = viewDate.getMonth();
+        const firstDayOfMonth = new Date(year, month, 1);
+        
+        const grid = [];
+        const startDate = new Date(firstDayOfMonth);
+        startDate.setDate(startDate.getDate() - startDate.getDay());
+
+        const hebrewDateOptions = { day: 'numeric' };
+        const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', hebrewDateOptions);
+        const today = new Date();
+        const todayISO = formatDateISO(today);
+
+        for (let i = 0; i < 42; i++) {
+            const currentDate = new Date(startDate);
+            const isoDate = formatDateISO(currentDate);
+            const numericHebrewDay = parseInt(hebrewFormatter.format(currentDate), 10);
+            grid.push({
+                gregorianDate: currentDate,
+                gregorianDay: currentDate.getDate(),
+                hebrewDay: numberToHebrew(numericHebrewDay),
+                isToday: isoDate === todayISO,
+                isCurrentMonth: currentDate.getMonth() === month,
+                holiday: HOLIDAYS[isoDate] || null,
+                dayEvents: events[isoDate] || [],
+            });
+            startDate.setDate(startDate.getDate() + 1);
+        }
+        return grid;
+    }, [viewDate, events]);
+    
+    const handlePrevMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+    const handleNextMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    const handleToday = () => setViewDate(new Date());
+
+    const openModal = (date) => setSelectedDate(date);
+    const closeModal = () => setSelectedDate(null);
+    
+    const addEvent = (text) => {
+        const iso = formatDateISO(selectedDate);
+        setEvents(prev => ({
+            ...prev,
+            [iso]: [...(prev[iso] || []), text]
+        }));
+    };
+    const deleteEvent = (index) => {
+        const iso = formatDateISO(selectedDate);
+        setEvents(prev => {
+            const updatedEvents = [...(prev[iso] || [])];
+            updatedEvents.splice(index, 1);
+            return {...prev, [iso]: updatedEvents};
+        });
+    };
+
+    const gregorianMonthFormatter = new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric' });
+    const hebrewMonthFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { month: 'long', year: 'numeric' });
+    const dateParts = hebrewMonthFormatter.formatToParts(viewDate);
+    const hebrewMonth = dateParts.find(p => p.type === 'month')?.value || '';
+    const hebrewYear = dateParts.find(p => p.type === 'year')?.value || '';
+    const hebrewYearInLetters = numberToHebrew(parseInt(hebrewYear, 10));
+
+    const weekDays = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+    
+    return (
+        <Card className="text-right p-4">
+            <header className="flex justify-between items-center mb-3">
+                <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-[rgba(0,0,0,0.1)]">❮</button>
+                <div className="text-center">
+                    <h3 className="text-xl font-bold">{gregorianMonthFormatter.format(viewDate)}</h3>
+                    <p style={{color: 'var(--text-secondary)'}}>{`${hebrewMonth}, ${hebrewYearInLetters}`}</p>
+                </div>
+                <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-[rgba(0,0,0,0.1)]">❯</button>
+            </header>
+            <div className="text-center mb-2">
+                <button onClick={handleToday} className="text-sm font-semibold py-1 px-3 rounded-full" style={{backgroundColor: 'var(--bg-input)', color: 'var(--accent-primary)'}}>היום</button>
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+                {weekDays.map(day => <div key={day} className="font-bold text-center p-1" style={{color: 'var(--text-secondary)'}}>{day}</div>)}
+                {calendarData.map((day, index) => (
+                    <div 
+                        key={index} 
+                        onClick={() => openModal(day.gregorianDate)}
+                        className={`p-1.5 border rounded-lg h-20 flex flex-col justify-between cursor-pointer transition-colors ${day.isCurrentMonth ? '' : 'opacity-50'} ${day.isToday ? 'border-2 ring-2 ring-offset-1 ring-[var(--accent-primary)]' : 'border-transparent'} hover:border-[var(--accent-primary)]`}
+                        style={{backgroundColor: day.isCurrentMonth ? 'var(--bg-input)' : 'transparent'}}
+                    >
+                        <div className="flex justify-between text-xs">
+                            <span className="font-bold">{day.gregorianDay}</span>
+                            <span style={{color: 'var(--text-secondary)'}}>{day.hebrewDay}</span>
+                        </div>
+                        <div className="text-center text-xs overflow-hidden">
+                            {day.holiday && <span className="font-bold block" style={{color: 'var(--accent-primary)'}}>{day.holiday}</span>}
+                            {day.dayEvents.length > 0 && 
+                                <div className="flex justify-center items-center mt-1">
+                                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: 'var(--accent-primary)'}} title={`${day.dayEvents.length} אירועים`}></div>
+                                </div>
+                            }
+                        </div>
+                        <div></div>
+                    </div>
+                ))}
+            </div>
+            {selectedDate && (
+                <EventModal 
+                    date={selectedDate} 
+                    events={events[formatDateISO(selectedDate)] || []}
+                    onClose={closeModal}
+                    onAddEvent={addEvent}
+                    onDeleteEvent={deleteEvent}
+                />
+            )}
+        </Card>
+    );
+};
 const getDomainFromUrl = (url) => {
     try {
-        // Ensure URL has a protocol for the URL constructor
         let fullUrl = url;
         if (!/^https?:\/\//i.test(url)) {
             fullUrl = 'https://' + url;
@@ -1327,15 +1596,15 @@ const getDomainFromUrl = (url) => {
         return url;
     }
 };
-const ShortcutGrid = () => {
-    const [shortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
-    const [groups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
-    
+const ShortcutGrid = ({ shortcuts, setShortcuts, shortcutGroups }) => {
+    const dragItem = useRef(null);
+    const dragOverItem = useRef(null);
+
     const groupedShortcuts = useMemo(() => {
-        const groupMap = new Map(groups.map(g => [g.id, { ...g, shortcuts: [] }]));
+        const groupMap = new Map(shortcutGroups.map(g => [g.id, { ...g, shortcuts: [] }]));
         const uncategorized = [];
 
-        const allShortcuts = [...DEFAULT_SHORTCUTS.map(s => ({...s, groupId: null})), ...shortcuts];
+        const allShortcuts = [...DEFAULT_SHORTCUTS.map(s => ({...s, groupId: null, isDefault: true})), ...shortcuts];
 
         allShortcuts.forEach(s => {
             if (s.groupId && groupMap.has(s.groupId)) {
@@ -1350,7 +1619,39 @@ const ShortcutGrid = () => {
             result.push({ id: 'uncategorized', name: 'קישורים כלליים', shortcuts: uncategorized });
         }
         return result;
-    }, [shortcuts, groups]);
+    }, [shortcuts, shortcutGroups]);
+
+    const handleDragStart = (e, item) => {
+        dragItem.current = item;
+        e.currentTarget.classList.add('dragging');
+    };
+
+    const handleDragEnter = (e, item) => {
+        dragOverItem.current = item;
+    };
+    
+    const handleDrop = (e) => {
+        const dragItemValue = dragItem.current;
+        const dragOverItemValue = dragOverItem.current;
+        
+        if (dragItemValue && dragOverItemValue && dragItemValue.id !== dragOverItemValue.id && dragItemValue.groupId === dragOverItemValue.groupId) {
+            const currentItems = [...shortcuts];
+            const dragItemIndex = currentItems.findIndex(i => i.id === dragItemValue.id);
+            const dragOverItemIndex = currentItems.findIndex(i => i.id === dragOverItemValue.id);
+
+            if (dragItemIndex !== -1 && dragOverItemIndex !== -1) {
+                const [reorderedItem] = currentItems.splice(dragItemIndex, 1);
+                currentItems.splice(dragOverItemIndex, 0, reorderedItem);
+                setShortcuts(currentItems);
+            }
+        }
+    };
+    
+    const handleDragEnd = (e) => {
+        e.currentTarget.classList.remove('dragging');
+        dragItem.current = null;
+        dragOverItem.current = null;
+    };
 
     return (
         <div className="space-y-6">
@@ -1359,7 +1660,17 @@ const ShortcutGrid = () => {
                     <h3 className="text-xl font-bold mb-2 text-right">{group.name}</h3>
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
                         {group.shortcuts.map((s, idx) => (
-                            <Card key={s.id || `${s.url}-${idx}`} className="user-shortcut" onClick={() => window.location.href = s.url}>
+                            <Card 
+                                key={s.id || `${s.url}-${idx}`} 
+                                className={!s.isDefault ? "user-shortcut" : ""}
+                                onClick={() => window.location.href = s.url}
+                                draggable={!s.isDefault}
+                                onDragStart={!s.isDefault ? (e) => handleDragStart(e, s) : undefined}
+                                onDragEnter={!s.isDefault ? (e) => handleDragEnter(e, s) : undefined}
+                                onDragEnd={!s.isDefault ? handleDragEnd : undefined}
+                                onDragOver={!s.isDefault ? (e) => e.preventDefault() : undefined}
+                                onDrop={!s.isDefault ? handleDrop : undefined}
+                            >
                                 <img
                                     className="w-14 h-14 object-contain mb-2 rounded-xl bg-white p-1.5 shadow-md mx-auto"
                                     src={`https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(getDomainFromUrl(s.url))}`}
@@ -1377,14 +1688,12 @@ const ShortcutGrid = () => {
         </div>
     );
 };
-const HomePanel = ({ setActiveTab }) => {
+const HomePanel = ({ setActiveTab, homeLayoutOrder, shortcuts, setShortcuts, shortcutGroups }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchHistory, setSearchHistory] = useLocalStorage('dashboard_search_history_v1', []);
     const [newShortcutTitle, setNewShortcutTitle] = useState('');
     const [newShortcutUrl, setNewShortcutUrl] = useState('');
     const [newShortcutGroup, setNewShortcutGroup] = useState('');
-    const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
-    const [shortcutGroups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
 
     const handleSearch = () => {
         const q = searchTerm.trim();
@@ -1413,6 +1722,17 @@ const HomePanel = ({ setActiveTab }) => {
         setNewShortcutUrl('');
     };
     
+    const shortcutsContent = (
+        <div className="w-full lg:w-2/3">
+            <ShortcutGrid shortcuts={shortcuts} setShortcuts={setShortcuts} shortcutGroups={shortcutGroups}/>
+        </div>
+    );
+    const calendarContent = (
+        <div className="w-full lg:w-1/3">
+            <HebrewCalendar />
+        </div>
+    );
+
     return (
         <>
             <div className="flex justify-center gap-2 mb-4">
@@ -1452,8 +1772,19 @@ const HomePanel = ({ setActiveTab }) => {
                     <MainButton onClick={() => setActiveTab(Tab.Personal)} className="bg-gray-600 hover:bg-gray-700 text-white">נהל קבוצות</MainButton>
                 </div>
             </Card>
-            <div className="w-full">
-                <ShortcutGrid />
+            
+            <div className="flex flex-col lg:flex-row gap-4">
+                {homeLayoutOrder === 'calendar-left' ? (
+                    <>
+                        {calendarContent}
+                        {shortcutsContent}
+                    </>
+                ) : (
+                    <>
+                        {shortcutsContent}
+                        {calendarContent}
+                    </>
+                )}
             </div>
         </>
     );
@@ -1627,6 +1958,10 @@ const App = () => {
     const [layout, setLayout] = useLocalStorage('dashboard_layout_v1', 'classic');
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [apiKey, setApiKey] = useLocalStorage('dashboard_gemini_api_key_v1', '');
+    const [homeLayoutOrder, setHomeLayoutOrder] = useLocalStorage('dashboard_home_layout_v1', 'shortcuts-left');
+    const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
+    const [shortcutGroups, setShortcutGroups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
+
 
     // --- Data Migration ---
     useEffect(() => {
@@ -1688,11 +2023,11 @@ const App = () => {
         <div className="flex-1 flex flex-col p-4 overflow-y-auto h-full">
             <PageHeader />
             <main className="flex-1">
-                <Panel id={Tab.Home} activeTab={activeTab}><HomePanel setActiveTab={setActiveTab} /></Panel>
+                <Panel id={Tab.Home} activeTab={activeTab}><HomePanel setActiveTab={setActiveTab} homeLayoutOrder={homeLayoutOrder} shortcuts={shortcuts} setShortcuts={setShortcuts} shortcutGroups={shortcutGroups} /></Panel>
                 <Panel id={Tab.Tools} activeTab={activeTab}><ToolsPanel /></Panel>
-                <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel apiKey={apiKey} setApiKey={setApiKey} /></Panel>
+                <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel apiKey={apiKey} setApiKey={setApiKey} shortcuts={shortcuts} setShortcuts={setShortcuts} shortcutGroups={shortcutGroups} setShortcutGroups={setShortcutGroups} /></Panel>
                 <Panel id={Tab.History} activeTab={activeTab}><HistoryPanel /></Panel>
-                <Panel id={Tab.Design} activeTab={activeTab}><DesignPanel setFont={setFont} setBackground={setBackground} themeName={themeName} setThemeName={setThemeName} skin={skin} setSkin={setSkin} layout={layout} setLayout={setLayout} /></Panel>
+                <Panel id={Tab.Design} activeTab={activeTab}><DesignPanel setFont={setFont} setBackground={setBackground} themeName={themeName} setThemeName={setThemeName} skin={skin} setSkin={setSkin} layout={layout} setLayout={setLayout} homeLayoutOrder={homeLayoutOrder} setHomeLayoutOrder={setHomeLayoutOrder} /></Panel>
                 <Panel id={Tab.Map} activeTab={activeTab}><MapPanel /></Panel>
                 <Panel id={Tab.News} activeTab={activeTab}><NewsPanel /></Panel>
                 <Panel id={Tab.Music} activeTab={activeTab}><MusicPanel /></Panel>
