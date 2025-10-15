@@ -128,10 +128,10 @@
 <script type="importmap">
 {
   "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "@google/genai": "https://esm.run/@google/genai"
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "@google/genai": "https://esm.run/@google/genai",
+    "@vercel/analytics/react": "https://esm.run/@vercel/analytics/react"
   }
 }
 </script>
@@ -142,6 +142,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI } from "@google/genai";
+import { Analytics } from "@vercel/analytics/react";
 
 // Formerly types.ts
 const Tab = {
@@ -2054,6 +2055,7 @@ const App = () => {
             )}
             <FloatingActionButton onClick={() => setIsChatOpen(true)} />
             <GeminiChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} apiKey={apiKey} setActiveTab={setActiveTab} />
+            <Analytics />
         </div>
     );
 };
