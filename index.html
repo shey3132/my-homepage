@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -190,7 +191,7 @@
       history: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>,
       design: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-2 16.08c0-1.45.69-2.73 1.76-3.54.31-.24.5-.6.5-1.01V11c0-.45-.19-.84-.5-1.1C10.69 9.17 10 7.9 10 6.45c0-1.18.31-2.26.84-3.21-.62-.22-1.28-.34-2-.34-5.52 0-10 4.48-10 10 0 5.16 3.92 9.42 8.94 9.95.02.01.04.01.06.01V20c0-.55.45-1 1-1h1.08c.05 0 .1.01.14.02l.06.01c.21.03.42.05.63.05 1.08 0 2.06-.35 2.87-.95C14.16 19.34 13.21 21 12 21c-1.89 0-3.6-.9-4.69-2.33-.29.13-.56.28-.81.45zM20.71 10.5l-2.2-2.2c-.39-.39-1.02-.39-1.41 0L15 10.41l3.59 3.59L20.71 12c.39-.39.39-1.02 0-1.41zM13 12.01L15.99 15l-4.2 4.2c-.39.39-1.02.39-1.41 0s-.39-1.02 0-1.41L13 15.18V12.01z"/></svg>,
       map: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-6.5 18-3.5-7-7-3.5L20.5 3z"/></svg>,
-      news: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>,
+      news: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2-H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>,
       music: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z"/></svg>,
     };
     const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -907,10 +908,11 @@
         );
     };
     const Weather = () => {
-        const [weatherData, setWeatherData] = useLocalStorage('dashboard_weather_data_v1', null);
-        const [lastFetch, setLastFetch] = useLocalStorage('dashboard_weather_fetch_v1', 0);
-        const [loading, setLoading] = useState(true);
+        const [weatherData, setWeatherData] = useLocalStorage('dashboard_weather_data_v2', null);
+        const [lastFetch, setLastFetch] = useLocalStorage('dashboard_weather_fetch_v2', 0);
+        const [loading, setLoading] = useState(false);
         const [error, setError] = useState(null);
+        
         const getWeatherInfo = (code) => {
             if (code === 0) return { icon: '☀️', description: 'שמיים בהירים' };
             if (code >= 1 && code <= 3) return { icon: '🌤️', description: 'מעונן חלקית' };
@@ -921,6 +923,7 @@
             if (code >= 95 && code <= 99) return { icon: '⛈️', description: 'סופת רעמים' };
             return { icon: '🌍', description: 'לא ידוע' };
         };
+        
         const fetchWeather = useCallback(() => {
             setLoading(true);
             setError(null);
@@ -965,18 +968,19 @@
                 }
             );
         }, [setWeatherData, setLastFetch]);
+
         useEffect(() => {
             const now = Date.now();
-            if (!weatherData || (now - lastFetch > 30 * 60 * 1000)) {
-                fetchWeather();
-            } else {
-                setLoading(false);
+            if (weatherData && (now - lastFetch > 30 * 60 * 1000)) {
+                fetchWeather(); // Auto-refresh stale data
             }
         }, [fetchWeather, weatherData, lastFetch]);
+
         if (loading) {
             return <Card><div className="text-center p-4">טוען נתוני מזג אוויר...</div></Card>;
         }
-        if (error && !weatherData) {
+        
+        if (error) {
             return (
                 <Card>
                     <div className="text-center p-4 text-red-600">
@@ -986,7 +990,20 @@
                 </Card>
             );
         }
-        if (!weatherData) return null;
+        
+        if (!weatherData) {
+            return (
+                <Card className="text-center">
+                    <h3 className="text-lg font-bold mb-3">מזג אוויר</h3>
+                    <p className="mb-4 text-gray-600">לחץ על הכפתור כדי לקבל תחזית עדכנית למיקומך.</p>
+                    <MainButton onClick={fetchWeather}>
+                         <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                         <span>הצג תחזית מזג אוויר</span>
+                    </MainButton>
+                </Card>
+            )
+        }
+
         return (
             <Card className="text-right max-w-md mx-auto">
                 <div className="flex justify-between items-start">
@@ -1014,7 +1031,6 @@
                         </div>
                     ))}
                 </div>
-                 {error && <div className="text-center p-2 text-yellow-700 bg-yellow-100 rounded-lg mt-3 text-sm">{error}</div>}
             </Card>
         );
     };
