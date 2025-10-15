@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>דף הבית</title>
+  <title>Hebrew Personal Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Added Babel for in-browser JSX transpilation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -376,7 +377,7 @@
                 <h1 
                   className="text-2xl font-bold text-center mb-4 font-[Varela Round]"
                   style={{color: 'var(--text-primary)'}}
-                >אפשרויות</h1>
+                >הדשבורד שלי</h1>
                 <nav className="flex flex-col gap-2">
                     {TABS.map(tab => {
                         const Icon = icons[tab.id];
@@ -409,7 +410,7 @@
                 style={{ backgroundColor: 'var(--bg-sidebar)' }}
             >
                 <h1 className="text-xl font-bold font-[Varela Round]" style={{ color: 'var(--text-primary)' }}>
-                    אפשרויות
+                    הדשבורד שלי
                 </h1>
                 <nav className="flex items-center gap-1">
                     {TABS.map(tab => {
@@ -839,6 +840,9 @@
         return (
              <>
                 <h3 className="text-xl font-bold mt-3 mb-2 text-right">ניהול קבוצות קישורים</h3>
+                <p className="text-sm mb-2 text-right" style={{color: 'var(--text-secondary)'}}>
+                    כאן תוכל ליצור ולערוך קבוצות כדי לארגן את קיצורי הדרך שלך.
+                </p>
                 <Card className="text-right">
                     <div className="flex gap-2 mb-3">
                         <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addGroup()} placeholder="שם קבוצה חדשה..." />
@@ -1467,7 +1471,7 @@
             </Card>
         );
     };
-    const HomePanel = () => {
+    const HomePanel = ({ setActiveTab }) => {
         const [searchTerm, setSearchTerm] = useState('');
         const [searchHistory, setSearchHistory] = useLocalStorage('dashboard_search_history_v1', []);
         const [newShortcutTitle, setNewShortcutTitle] = useState('');
@@ -1577,7 +1581,7 @@
                             {shortcutGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                         </select>
                         <MainButton onClick={handleAddShortcut}>הוסף קישור</MainButton>
-                        <MainButton onClick={handleExport} className="bg-teal-600 hover:bg-teal-700 text-white">ייצא JSON</MainButton>
+                        <MainButton onClick={() => setActiveTab(Tab.Personal)} className="bg-gray-600 hover:bg-gray-700 text-white">נהל קבוצות</MainButton>
                     </div>
                 </Card>
                 <div className="flex flex-col lg:flex-row gap-4 items-start">
@@ -1608,8 +1612,7 @@
             aria-label="פתח חלון עוזר AI"
         >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15.59L7.41 14H5v-4h2.41L11 6.41V17.59zM16.5 12c0-1.77-1-3.29-2.5-4.03v8.05c1.5-0.73 2.5-2.25 2.5-4.02z" opacity="0.3"/>
-                <path d="M11 6.41L7.41 10H5v4h2.41L11 17.59V6.41M13 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                <path d="M19 9.26l-2.74-1.1L15 5l-1.26 3.16L11 9.26l2.74 1.1L15 13l1.26-2.64L19 9.26zM15 19l-1.26-3.16L11 14.74l2.74-1.1L15 11l1.26 2.64L19 14.74l-2.74 1.1L15 19zM5 13l-1.26-3.16L1 8.74l2.74-1.1L5 5l1.26 2.64L9 8.74l-2.74 1.1L5 13z"/>
             </svg>
         </button>
     );
@@ -1795,7 +1798,7 @@
             <div className="flex-1 flex flex-col p-4 overflow-y-auto h-full">
                 <PageHeader />
                 <main className="flex-1">
-                    <Panel id={Tab.Home} activeTab={activeTab}><HomePanel /></Panel>
+                    <Panel id={Tab.Home} activeTab={activeTab}><HomePanel setActiveTab={setActiveTab} /></Panel>
                     <Panel id={Tab.Tools} activeTab={activeTab}><ToolsPanel /></Panel>
                     <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel /></Panel>
                     <Panel id={Tab.History} activeTab={activeTab}><HistoryPanel /></Panel>
@@ -1805,7 +1808,7 @@
                     <Panel id={Tab.Music} activeTab={activeTab}><MusicPanel /></Panel>
                 </main>
                 <footer className="text-center mt-3 font-semibold" style={{color: 'var(--text-secondary)'}}>
-                    עוצב ע"י שי לבל
+                    דשבורד מקומי — כל הנתונים נשמרים בדפדפן שלך
                 </footer>
             </div>
         );
