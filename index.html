@@ -152,6 +152,7 @@
       Map: 'map',
       News: 'news',
       Music: 'music',
+      Help: 'help',
     };
 
     // Formerly constants.ts
@@ -363,6 +364,7 @@
       map: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-6.5 18-3.5-7-7-3.5L20.5 3z"/></svg>,
       news: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2 H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>,
       music: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z"/></svg>,
+      help: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>,
     };
     const TABS = [
         { id: Tab.Home, label: 'דף הבית' },
@@ -373,6 +375,7 @@
         { id: Tab.Map, label: 'מפה' },
         { id: Tab.News, label: 'חדשות' },
         { id: Tab.Music, label: 'מוזיקה' },
+        { id: Tab.Help, label: 'עזרה' },
     ];
     const Sidebar = ({ activeTab, setActiveTab }) => {
         return (
@@ -1240,6 +1243,61 @@
             </div>
         );
     };
+    const HelpPanel = () => {
+      return (
+        <div className="max-w-4xl mx-auto space-y-4 text-right">
+          <h2 className="text-3xl font-bold text-center mb-6" style={{color: 'var(--text-primary)'}}>מדריך למשתמש</h2>
+
+          <Card className="text-right">
+            <h3 className="text-xl font-bold mb-2">ברוכים הבאים לדשבורד האישי!</h3>
+            <p style={{color: 'var(--text-secondary)'}}>
+              הדשבורד הזה הוא מרכז הבקרה האישי שלכם, שנועד לרכז במקום אחד את כל מה שחשוב לכם: קישורים, כלים, פתקים, ועוד. כל המידע נשמר באופן מאובטח ופרטי ישירות בדפדפן שלכם, ושום דבר לא נשלח לשרת חיצוני.
+            </p>
+          </Card>
+
+          <Card className="text-right">
+            <h3 className="text-xl font-bold mb-2">תכונות עיקריות</h3>
+            <ul className="list-disc pr-5 space-y-2" style={{color: 'var(--text-secondary)'}}>
+              <li><b>דף הבית:</b> המקום המרכזי שלכם. כאן תוכלו לחפש בגוגל, להוסיף קיצורי דרך, לנהל אירועים בלוח השנה העברי ולסדר את הוידג'טים (לוח שנה וקישורים) על ידי גרירה ושחרור.</li>
+              <li><b>כלים:</b> גישה מהירה למחשבון, סטופר/טיימר ומתרגם של גוגל.</li>
+              <li><b>אישי:</b> המרחב הפרטי שלכם. רשמו פתקים, נהלו רשימת משימות, וארגנו את הקישורים והקבוצות שלכם.</li>
+              <li><b>היסטוריה:</b> צפו ומחקו את היסטוריית החיפושים שלכם בגוגל שבוצעו דרך הדשבורד.</li>
+              <li><b>עיצוב:</b> התאימו את הדשבורד בדיוק לטעמכם! שנו פריסה, סגנון, ערכת נושא, פונט ורקע.</li>
+              <li><b>מפה, חדשות, מוזיקה:</b> לשוניות ייעודיות עם אתרים פופולריים בתחומים אלו, מוצגים ישירות בתוך הדשבורד.</li>
+            </ul>
+          </Card>
+          
+          <Card className="text-right">
+            <h3 className="text-xl font-bold mb-2">התאמה אישית (לשונית "עיצוב")</h3>
+            <p style={{color: 'var(--text-secondary)'}}>
+              בלשונית 'עיצוב' תוכלו לשנות כמעט כל היבט ויזואלי של הדשבורד:
+            </p>
+            <ul className="list-disc pr-5 mt-2 space-y-1" style={{color: 'var(--text-secondary)'}}>
+              <li><b>פריסת עמוד:</b> בחרו בין תפריט צד קלאסי לתפריט עליון מודרני.</li>
+              <li><b>סגנון עיצוב:</b> 'מודרני' עם אפקטים, 'מינימליסטי' נקי, או 'נאומורפי' עם תחושת תלת-ממד.</li>
+              <li><b>ערכות נושא:</b> בחרו ערכת צבעים מוכנה מראש (בהיר, כהה, אוקיינוס ועוד).</li>
+              <li><b>רקעים:</b> העלו תמונה משלכם, בחרו מתוך מבחר מוגדר, או קבלו רקע אקראי.</li>
+            </ul>
+          </Card>
+
+          <Card className="text-right">
+            <h3 className="text-xl font-bold mb-2">עוזר AI (בינה מלאכותית)</h3>
+            <p style={{color: 'var(--text-secondary)'}}>
+              כפתור הכוכבים הצף בפינה השמאלית התחתונה פותח חלון צ'אט עם עוזר AI של Google (Gemini).
+              <br/>
+              כדי להשתמש בו, תצטרכו להנפיק <strong>מפתח API</strong> אישי וחינמי. לחצו על הקישור בחלון הצ'אט, העתיקו את המפתח שתקבלו, והדביקו אותו בשדה המתאים. המפתח יישמר בדפדפן לשימוש עתידי.
+            </p>
+          </Card>
+          
+           <Card className="text-right">
+            <h3 className="text-xl font-bold mb-2">פרטיות ונתונים</h3>
+            <p style={{color: 'var(--text-secondary)'}}>
+              חשוב לנו להדגיש: <strong>כל הנתונים שלכם</strong> (קישורים, פתקים, היסטוריה, הגדרות וכו') נשמרים אך ורק ב-LocalStorage של הדפדפן במחשב שלכם. שום מידע אינו נשלח אלינו או נשמר על שרת חיצוני. הפרטיות שלכם מלאה.
+            </p>
+          </Card>
+        </div>
+      );
+    };
 
     // Formerly components/HomePanel.tsx
     const getDomainFromUrl = (url) => {
@@ -1866,6 +1924,7 @@
                     <Panel id={Tab.Map} activeTab={activeTab}><MapPanel /></Panel>
                     <Panel id={Tab.News} activeTab={activeTab}><NewsPanel /></Panel>
                     <Panel id={Tab.Music} activeTab={activeTab}><MusicPanel /></Panel>
+                    <Panel id={Tab.Help} activeTab={activeTab}><HelpPanel /></Panel>
                 </main>
                 <footer className="text-center mt-3 font-semibold" style={{color: 'var(--text-secondary)'}}>
                     דשבורד מקומי — כל הנתונים נשמרים בדפדפן שלך
