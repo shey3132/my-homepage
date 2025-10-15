@@ -598,7 +598,6 @@ const PageHeader = () => {
         </header>
     );
 };
-// FIX: Make children prop optional with a default value to fix TypeScript error.
 const Panel = ({ id, activeTab, children = null }) => {
     return (
         <section
@@ -609,7 +608,6 @@ const Panel = ({ id, activeTab, children = null }) => {
         </section>
     );
 };
-// FIX: Make onClick prop optional with a default value to fix TypeScript error.
 const Card = ({ children, className = '', onClick = undefined, ...props }) => {
     const baseClasses = "card-style p-4 text-center border transition-all duration-300";
     const clickableClasses = onClick ? "cursor-pointer hover:-translate-y-1" : "";
@@ -627,7 +625,6 @@ const Card = ({ children, className = '', onClick = undefined, ...props }) => {
         </div>
     );
 };
-// FIX: Make className prop optional with a default value to fix TypeScript error.
 const MainButton = ({ children, className = '', style, ...props }) => (
     <button
         className={`button-style py-2.5 px-5 border-none font-bold cursor-pointer transition-all duration-200 disabled:bg-gray-400 disabled:shadow-none flex items-center justify-center gap-2 ${className}`}
@@ -643,7 +640,6 @@ const MainButton = ({ children, className = '', style, ...props }) => (
         {children}
     </button>
 );
-// FIX: Make className prop optional with a default value to fix TypeScript error.
 const Input = ({ className = '', ...props }) => (
     <input
         className={`input-style w-full p-2.5 border text-base outline-none transition-shadow focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)] ${className}`}
@@ -1021,8 +1017,7 @@ const DesignPanel = ({ setFont, setBackground, themeName, setThemeName, skin, se
         const reader = new FileReader();
         reader.onload = (event) => {
             const data = event.target?.result;
-            // FIX: Cast `data` to string to satisfy `setBackground`'s expected type.
-            setBackground(data as string);
+            setBackground(data);
             alert('רקע הוחלף');
         };
         reader.readAsDataURL(file);
@@ -1138,8 +1133,7 @@ const MapPanel = () => {
 const IFrameCard = ({title, siteUrl, iframeId}) => {
     const refreshIframe = () => {
         const iframe = document.getElementById(iframeId);
-        // FIX: Cast iframe to HTMLIFrameElement to access src property without TypeScript errors.
-        if (iframe) (iframe as HTMLIFrameElement).src = (iframe as HTMLIFrameElement).src;
+        if (iframe) iframe.src = iframe.src;
     };
     return (
         <div className="card-style overflow-hidden border" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)'}}>
@@ -1310,15 +1304,13 @@ const ShortcutGrid = () => {
 
         allShortcuts.forEach(s => {
             if (s.groupId && groupMap.has(s.groupId)) {
-                // FIX: Cast the result of groupMap.get to 'any' to avoid TypeScript error about property 'shortcuts' not existing on type 'unknown'.
-                (groupMap.get(s.groupId) as any).shortcuts.push(s);
+                groupMap.get(s.groupId).shortcuts.push(s);
             } else {
                 uncategorized.push(s);
             }
         });
 
-        // FIX: Cast group 'g' to 'any' to avoid TypeScript error about property 'shortcuts' not existing on type 'unknown'.
-        const result = Array.from(groupMap.values()).filter(g => (g as any).shortcuts.length > 0);
+        const result = Array.from(groupMap.values()).filter(g => g.shortcuts.length > 0);
         if (uncategorized.length > 0) {
             result.push({ id: 'uncategorized', name: 'קישורים כלליים', shortcuts: uncategorized });
         }
@@ -1454,8 +1446,9 @@ const GeminiChat = ({ isOpen, onClose }) => {
     const messagesEndRef = useRef(null);
 
     const ai = useMemo(() => {
-        if (!process.env.API_KEY) {
+        if (typeof process === 'undefined' || !process.env || !process.env.API_KEY) {
             setError('מפתח ה-API אינו מוגדר.');
+            console.error("Gemini API Key is not configured in the environment.");
             return null;
         }
         try {
