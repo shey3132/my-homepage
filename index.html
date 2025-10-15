@@ -276,7 +276,12 @@
           const item = window.localStorage.getItem(key);
           return item ? JSON.parse(item) : initialValue;
         } catch (error) {
-          console.error(error);
+          console.warn(`Could not parse localStorage key "${key}". Resetting to initial value.`, error);
+          try {
+            window.localStorage.removeItem(key);
+          } catch (removeError) {
+            console.error(`Failed to remove corrupted key "${key}" from localStorage.`, removeError);
+          }
           return initialValue;
         }
       });
@@ -295,14 +300,16 @@
       
       useEffect(() => {
         const handleStorageChange = (e) => {
-          if (e.key === key && e.newValue !== null) {
-            try {
-              setStoredValue(JSON.parse(e.newValue));
-            } catch (error) {
-              console.error(`Error parsing storage change for key "${key}":`, error);
-            }
-          } else if (e.key === key && e.newValue === null) {
-             setStoredValue(initialValue);
+          if (e.key === key) {
+             if (e.newValue === null) {
+                setStoredValue(initialValue);
+             } else {
+                try {
+                  setStoredValue(JSON.parse(e.newValue));
+                } catch (error) {
+                  console.warn(`Error parsing storage change for key "${key}":`, error);
+                }
+             }
           }
         };
 
@@ -437,6 +444,123 @@
             </header>
         );
     };
+    const WEATHER_REGIONS = {
+        'תל אביב': { lat: 32.0853, lon: 34.7818 },
+        'ירושלים': { lat: 31.7683, lon: 35.2137 },
+        'חיפה': { lat: 32.7940, lon: 34.9896 },
+        'באר שבע': { lat: 31.2530, lon: 34.7915 },
+        'אילת': { lat: 29.5577, lon: 34.9519 },
+        'צפת': { lat: 32.9647, lon: 35.4975 },
+        'טבריה': { lat: 32.7922, lon: 35.5312 },
+    };
+    const useWeather = () => {
+        const [selectedRegion, setSelectedRegion] = useLocalStorage('dashboard_weather_region_v1', 'תל אביב');
+        const [weatherData, setWeatherData] = useLocalStorage('dashboard_weather_data_v1', null);
+        const [lastFetch, setLastFetch] = useLocalStorage('dashboard_weather_fetch_v1', 0);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+
+        const getWeatherInfo = (code) => {
+            if (code === 0) return { icon: '☀️', description: 'שמיים בהירים' };
+            if (code >= 1 && code <= 3) return { icon: '🌤️', description: 'מעונן חלקית' };
+            if (code === 45 || code === 48) return { icon: '🌫️', description: 'ערפל' };
+            if (code >= 51 && code <= 57) return { icon: '🌧️', description: 'טפטוף' };
+            if (code >= 61 && code <= 67) return { icon: '🌧️', description: 'גשם' };
+            if (code >= 80 && code <= 82) return { icon: '🌦️', description: 'ממטרים' };
+            if (code >= 95 && code <= 99) return { icon: '⛈️', description: 'סופת רעמים' };
+            return { icon: '🌍', description: 'לא ידוע' };
+        };
+        
+        const fetchWeather = useCallback(async (region) => {
+            setLoading(true);
+            setError(null);
+
+            const regionData = WEATHER_REGIONS[region];
+            if (!regionData) {
+                setError('אזור לא חוקי נבחר.');
+                setLoading(false);
+                return;
+            }
+            const { lat: latitude, lon: longitude } = regionData;
+
+            try {
+                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`);
+                if (!weatherRes.ok) throw new Error(`שגיאת רשת במזג האוויר: ${weatherRes.status}`);
+                const weatherApiData = await weatherRes.json();
+                if (!weatherApiData || !weatherApiData.current || !weatherApiData.daily) throw new Error('תגובת API של מזג אוויר לא תקינה.');
+
+                const formattedData = {
+                    city: region,
+                    current: {
+                        temperature: Math.round(weatherApiData.current.temperature_2m),
+                        ...getWeatherInfo(weatherApiData.current.weather_code)
+                    },
+                    forecast: weatherApiData.daily.time.slice(1).map((date, index) => ({
+                        date: new Date(date).toLocaleDateString('he-IL', { weekday: 'short' }),
+                        maxTemp: Math.round(weatherApiData.daily.temperature_2m_max[index + 1]),
+                        minTemp: Math.round(weatherApiData.daily.temperature_2m_min[index + 1]),
+                        ...getWeatherInfo(weatherApiData.daily.weather_code[index + 1])
+                    }))
+                };
+                setWeatherData(formattedData);
+                setLastFetch(Date.now());
+            } catch (e) {
+                setError(e.message || 'שגיאה בקבלת נתוני מזג אוויר.');
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        }, [setWeatherData, setLastFetch]);
+
+        useEffect(() => {
+            const now = Date.now();
+            if (!weatherData || weatherData.city !== selectedRegion || (now - lastFetch > 30 * 60 * 1000)) {
+                fetchWeather(selectedRegion);
+            } else {
+                setLoading(false);
+            }
+        }, [fetchWeather, selectedRegion, weatherData, lastFetch]);
+        
+        const refresh = () => fetchWeather(selectedRegion);
+
+        return { weatherData, loading, error, selectedRegion, setSelectedRegion, refresh };
+    };
+    const WeatherHeaderWidget = () => {
+        const { weatherData, loading, error, selectedRegion, setSelectedRegion, refresh } = useWeather();
+        
+        return (
+            <div className="flex items-center gap-4">
+                {loading && <div style={{color: 'var(--text-secondary)'}}>טוען מזג אוויר...</div>}
+                {error && <div className="text-red-500 text-sm">שגיאת מזג אוויר</div>}
+                {weatherData && !loading && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-3xl">{weatherData.current.icon}</span>
+                        <div className="text-right">
+                            <span className="font-bold text-2xl block">{weatherData.current.temperature}°</span>
+                            <span className="text-sm" style={{color: 'var(--text-secondary)'}}>{weatherData.current.description}</span>
+                        </div>
+                    </div>
+                )}
+                <div className="flex items-center gap-2">
+                     <select
+                        value={selectedRegion}
+                        onChange={e => setSelectedRegion(e.target.value)}
+                        className="border rounded-lg focus:ring-2 focus:ring-[var(--accent-primary)] p-1.5 text-base cursor-pointer"
+                        style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}
+                        aria-label="בחר אזור"
+                        disabled={loading}
+                    >
+                        {Object.keys(WEATHER_REGIONS).map(region => (
+                            <option key={region} value={region}>{region}</option>
+                        ))}
+                    </select>
+                    <button onClick={refresh} title="רענן" className="transition p-1 disabled:opacity-50 disabled:cursor-wait" style={{color: 'var(--text-secondary)'}} disabled={loading}>
+                         <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" /></svg>
+                    </button>
+                </div>
+            </div>
+        );
+    };
     const PageHeader = () => {
         const [dateTime, setDateTime] = useState(new Date());
         useEffect(() => {
@@ -454,14 +578,17 @@
         return (
             <header className="mb-4" role="banner">
                 <div 
-                    className="page-header-style p-4 px-6 border flex justify-between items-center"
+                    className="page-header-style p-4 px-6 border flex justify-between items-center flex-wrap gap-4"
                     style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)'}}
                 >
-                     <div className="text-right">
-                        <h2 className="font-bold text-2xl mb-1.5" style={{color: 'var(--text-primary)'}}>{getGreeting()}</h2>
-                        <p className="text-md" style={{color: 'var(--text-secondary)'}}>
-                            {`📅 ${dateTime.toLocaleDateString('he-IL', dateOptions)} | ⏰ ${dateTime.toLocaleTimeString('he-IL')}`}
-                        </p>
+                    <div className="flex items-center gap-6 flex-wrap">
+                         <div className="text-right">
+                            <h2 className="font-bold text-2xl mb-1.5" style={{color: 'var(--text-primary)'}}>{getGreeting()}</h2>
+                            <p className="text-md" style={{color: 'var(--text-secondary)'}}>
+                                {`📅 ${dateTime.toLocaleDateString('he-IL', dateOptions)} | ⏰ ${dateTime.toLocaleTimeString('he-IL')}`}
+                            </p>
+                        </div>
+                        <WeatherHeaderWidget />
                     </div>
                     <QuoteOfTheDay />
                 </div>
@@ -503,8 +630,8 @@
               color: 'var(--text-on-accent)',
               ...style
             }}
-            onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--accent-primary-hover)'}
-            onMouseOut={e => e.currentTarget.style.backgroundColor = 'var(--accent-primary)'}
+            onMouseOver={e => {if (!props.disabled) e.currentTarget.style.backgroundColor = 'var(--accent-primary-hover)'}}
+            onMouseOut={e => {if (!props.disabled) e.currentTarget.style.backgroundColor = 'var(--accent-primary)'}}
             {...props}
         >
             {children}
@@ -1337,139 +1464,6 @@
             </Card>
         );
     };
-    const WEATHER_REGIONS = {
-        'תל אביב': { lat: 32.0853, lon: 34.7818 },
-        'ירושלים': { lat: 31.7683, lon: 35.2137 },
-        'חיפה': { lat: 32.7940, lon: 34.9896 },
-        'באר שבע': { lat: 31.2530, lon: 34.7915 },
-        'אילת': { lat: 29.5577, lon: 34.9519 },
-        'צפת': { lat: 32.9647, lon: 35.4975 },
-        'טבריה': { lat: 32.7922, lon: 35.5312 },
-    };
-    const Weather = () => {
-        const [selectedRegion, setSelectedRegion] = useLocalStorage('dashboard_weather_region_v1', 'תל אביב');
-        const [weatherData, setWeatherData] = useLocalStorage('dashboard_weather_data_v1', null);
-        const [lastFetch, setLastFetch] = useLocalStorage('dashboard_weather_fetch_v1', 0);
-        const [loading, setLoading] = useState(true);
-        const [error, setError] = useState(null);
-
-        const getWeatherInfo = (code) => {
-            if (code === 0) return { icon: '☀️', description: 'שמיים בהירים' };
-            if (code >= 1 && code <= 3) return { icon: '🌤️', description: 'מעונן חלקית' };
-            if (code === 45 || code === 48) return { icon: '🌫️', description: 'ערפל' };
-            if (code >= 51 && code <= 57) return { icon: '🌧️', description: 'טפטוף' };
-            if (code >= 61 && code <= 67) return { icon: '🌧️', description: 'גשם' };
-            if (code >= 80 && code <= 82) return { icon: '🌦️', description: 'ממטרים' };
-            if (code >= 95 && code <= 99) return { icon: '⛈️', description: 'סופת רעמים' };
-            return { icon: '🌍', description: 'לא ידוע' };
-        };
-
-        const fetchWeather = useCallback(async () => {
-            setLoading(true);
-            setError(null);
-
-            const regionData = WEATHER_REGIONS[selectedRegion];
-            if (!regionData) {
-                setError('אזור לא חוקי נבחר.');
-                setLoading(false);
-                return;
-            }
-            const { lat: latitude, lon: longitude } = regionData;
-
-            try {
-                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`);
-                if (!weatherRes.ok) {
-                    throw new Error(`שגיאת רשת במזג האוויר: ${weatherRes.status}`);
-                }
-                const weatherApiData = await weatherRes.json();
-                if (!weatherApiData || !weatherApiData.current || !weatherApiData.daily) {
-                    throw new Error('תגובת API של מזג אוויר לא תקינה.');
-                }
-
-                const formattedData = {
-                    city: selectedRegion,
-                    current: {
-                        temperature: Math.round(weatherApiData.current.temperature_2m),
-                        ...getWeatherInfo(weatherApiData.current.weather_code)
-                    },
-                    forecast: weatherApiData.daily.time.slice(1).map((date, index) => ({
-                        date: new Date(date).toLocaleDateString('he-IL', { weekday: 'short' }),
-                        maxTemp: Math.round(weatherApiData.daily.temperature_2m_max[index + 1]),
-                        minTemp: Math.round(weatherApiData.daily.temperature_2m_min[index + 1]),
-                        ...getWeatherInfo(weatherApiData.daily.weather_code[index + 1])
-                    }))
-                };
-                setWeatherData(formattedData);
-                setLastFetch(Date.now());
-            } catch (e) {
-                setError(e.message || 'שגיאה בקבלת נתוני מזג אוויר.');
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        }, [selectedRegion, setWeatherData, setLastFetch]);
-
-        useEffect(() => {
-            const now = Date.now();
-            if (!weatherData || weatherData.city !== selectedRegion || (now - lastFetch > 30 * 60 * 1000)) {
-                fetchWeather();
-            } else {
-                setLoading(false);
-            }
-        }, [fetchWeather, selectedRegion, weatherData, lastFetch]);
-
-        return (
-            <Card className="text-right">
-                <div className="flex justify-between items-start mb-2">
-                    <select
-                        value={selectedRegion}
-                        onChange={e => setSelectedRegion(e.target.value)}
-                        className="text-xl font-bold border rounded-lg focus:ring-2 focus:ring-[var(--accent-primary)] p-2 cursor-pointer"
-                        style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}
-                        aria-label="בחר אזור"
-                        disabled={loading}
-                    >
-                        {Object.keys(WEATHER_REGIONS).map(region => (
-                            <option key={region} value={region}>{region}</option>
-                        ))}
-                    </select>
-                    <button onClick={fetchWeather} title="רענן" className="transition p-1 disabled:opacity-50 disabled:cursor-wait" style={{color: 'var(--text-secondary)'}} disabled={loading}>
-                         <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" /></svg>
-                    </button>
-                </div>
-                {loading ? (
-                    <div className="text-center p-8 min-h-[220px] flex items-center justify-center">טוען נתוני מזג אוויר...</div>
-                ) : error ? (
-                    <div className="text-center p-4 min-h-[220px] text-red-600 flex flex-col items-center justify-center">
-                        <p className="mb-3">{error}</p>
-                        <MainButton onClick={fetchWeather}>נסה שוב</MainButton>
-                    </div>
-                ) : weatherData ? (
-                    <>
-                        <p className="text-right h-6" style={{color: 'var(--text-secondary)'}}>{weatherData.current.description}</p>
-                        <div className="flex items-center justify-center my-4">
-                            <span className="text-7xl">{weatherData.current.icon}</span>
-                            <span className="text-6xl font-bold mr-4">{weatherData.current.temperature}°</span>
-                        </div>
-                        <div className="flex justify-around text-center mt-4">
-                            {weatherData.forecast.map((day, index) => (
-                                <div key={index} className="flex-1">
-                                    <div className="font-bold">{day.date}</div>
-                                    <div className="text-3xl my-1">{day.icon}</div>
-                                    <div>
-                                        <span className="font-semibold">{day.maxTemp}°</span>
-                                        <span className="ml-1" style={{color: 'var(--text-secondary)'}}>{day.minTemp}°</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                ) : (
-                     <div className="text-center p-4 min-h-[220px] flex items-center justify-center">לא ניתן היה לטעון את נתוני מזג האוויר.</div>
-                )}
-            </Card>
-        );
-    };
     const HomePanel = ({ setActiveTab }) => {
         const [searchTerm, setSearchTerm] = useState('');
         const [searchHistory, setSearchHistory] = useLocalStorage('dashboard_search_history_v1', []);
@@ -1478,7 +1472,7 @@
         const [newShortcutGroup, setNewShortcutGroup] = useState('');
         const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
         const [shortcutGroups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
-        const [widgetOrder, setWidgetOrder] = useLocalStorage('dashboard_widget_order_v1', ['shortcuts', 'weather', 'calendar']);
+        const [widgetOrder, setWidgetOrder] = useLocalStorage('dashboard_widget_order_v2', ['shortcuts', 'calendar']);
         
         const draggedItem = useRef(null);
         const draggedOverItem = useRef(null);
@@ -1533,10 +1527,6 @@
             shortcuts: {
                 component: <ShortcutGrid />,
                 className: "w-full lg:flex-grow-[2] lg:w-2/3"
-            },
-            weather: {
-                component: <Weather />,
-                className: "w-full lg:flex-grow-[1] lg:w-1/3"
             },
             calendar: {
                 component: <HebrewCalendar />,
@@ -1624,11 +1614,10 @@
         const [isLoading, setIsLoading] = useState(false);
         const [error, setError] = useState('');
         const messagesEndRef = useRef(null);
-
+    
         const ai = useMemo(() => {
             if (!apiKey) return null;
             try {
-                // Clear previous errors when a new key is successfully used
                 setError('');
                 return new GoogleGenAI({ apiKey });
             } catch (e) {
@@ -1637,8 +1626,8 @@
                 setApiKey(''); // Clear bad key
                 return null;
             }
-        }, [apiKey]);
-
+        }, [apiKey, setApiKey]);
+    
         useEffect(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }, [messages]);
@@ -1648,6 +1637,7 @@
             if (keyToSave) {
                 setApiKey(keyToSave);
                 setTempApiKey('');
+                setError(''); // Clear previous errors
             } else {
                 setError('אנא הזן מפתח API.');
             }
@@ -1660,15 +1650,17 @@
               setError('');
             }
         }
-
+    
         const handleSend = async () => {
             if (!input.trim() || isLoading || !ai) return;
+    
             const userMessage = { role: 'user', text: input };
             setMessages(prev => [...prev, userMessage]);
             const currentInput = input;
             setInput('');
             setIsLoading(true);
-
+            setError('');
+    
             try {
                 const response = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
@@ -1683,16 +1675,19 @@
                 if (err.message && (err.message.includes('API key not valid') || err.message.includes('permission') || err.message.includes('API_KEY_INVALID'))) {
                     errorMessageText = 'מפתח ה-API אינו תקין או שאין לו הרשאות מתאימות. אנא בדוק את המפתח ונסה שוב.';
                     setApiKey(''); // Clear the invalid key to force re-entry
+                } else if (err.message) {
+                     errorMessageText += ` (${err.message})`
                 }
-                const errorMessage = { role: 'model', text: errorMessageText };
+                const errorMessage = { role: 'model', text: errorMessageText, isError: true };
                 setMessages(prev => [...prev, errorMessage]);
+                setError(errorMessageText);
             } finally {
                 setIsLoading(false);
             }
         };
-
+    
         if (!isOpen) return null;
-
+    
         const renderContent = () => {
             if (!ai || !apiKey) {
                 return (
@@ -1700,10 +1695,9 @@
                         <h4 className="text-xl font-bold mb-3">ברוכים הבאים לעוזר ה-AI</h4>
                         <p className="mb-4" style={{color: 'var(--text-secondary)'}}>
                             כדי להתחיל, יש להזין מפתח API אישי של Google Gemini.
-                            התהליך הוא חינמי ומהיר.
                         </p>
                         <a 
-                            href="https://aistudio.google.com/" 
+                            href="https://aistudio.google.com/app/apikey" 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-[var(--accent-primary)] hover:underline mb-4 font-semibold"
@@ -1727,18 +1721,18 @@
                     </div>
                 );
             }
-
+    
             return (
                 <>
                     <main className="flex-1 p-4 overflow-y-auto space-y-4">
                         {messages.length === 0 ? (
-                            <div className="text-center p-8 text-gray-500">
+                            <div className="text-center p-8" style={{color: 'var(--text-secondary)'}}>
                                 <p>שלום! איך אני יכול לעזור לך היום?</p>
                             </div>
                         ) : (
                             messages.map((msg, index) => (
                                 <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[80%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-[var(--accent-primary)] text-white rounded-br-none' : 'bg-[var(--bg-input)] rounded-bl-none'}`}>
+                                    <div className={`max-w-[80%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-[var(--accent-primary)] text-white rounded-br-none' : (msg.isError ? 'bg-red-100 text-red-800' : 'bg-[var(--bg-input)]')} rounded-bl-none`}>
                                         <p style={{whiteSpace: 'pre-wrap'}}>{msg.text}</p>
                                     </div>
                                 </div>
@@ -1758,15 +1752,16 @@
                         <div ref={messagesEndRef} />
                     </main>
                     <footer className="p-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                        {error && !messages.some(m => m.isError) && <p className="text-red-600 text-sm mb-2 text-center">{error}</p>}
                         <div className="flex gap-2">
                             <Input
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleSend()}
                                 placeholder="שאל אותי משהו..."
-                                disabled={isLoading}
+                                disabled={isLoading || !ai}
                             />
-                            <MainButton onClick={handleSend} disabled={isLoading}>שלח</MainButton>
+                            <MainButton onClick={handleSend} disabled={isLoading || !ai}>שלח</MainButton>
                         </div>
                     </footer>
                 </>
