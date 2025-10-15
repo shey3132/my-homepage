@@ -1,551 +1,1159 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>דף הבית</title>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --accent:#2b88ff;
-  --panel: rgba(255,255,255,0.94);
-  --card: rgba(255,255,255,0.18);
-  --radius:12px;
-  --muted: rgba(0,0,0,0.55);
-}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Assistant, Arial, sans-serif;background:linear-gradient(135deg,#b6f0e1,#c6d9ff);color:#111}
-body{padding:16px;display:flex;justify-content:center;min-height:100vh}
-.container{width:100%;max-width:1200px}
-.header{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:12px}
-.datetime{background:var(--panel);padding:12px 18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);text-align:center;min-width:300px}
-.greeting{font-weight:700;margin-bottom:6px;display:block}
-#datetime{font-size:15px;color:var(--muted)}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.tab-btn{padding:8px 12px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);cursor:pointer;background:transparent;font-weight:700}
-.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-section.panel{display:none;background:var(--panel);border-radius:12px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,0.08)}
-section.panel.active{display:block}
-.search-row{display:flex;justify-content:center;gap:8px;margin:10px 0}
-.search-row input[type="text"]{width:100%;max-width:700px;padding:10px;border-radius:10px 0 0 10px;border:1px solid rgba(0,0,0,0.08);outline:none}
-.search-row button{padding:10px;border-radius:0 10px 10px 0;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
-.controls{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
-.controls .card{display:flex;align-items:center;gap:8px}
-.controls button{padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);background:#fff;cursor:pointer;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
-.card{background:var(--card);border-radius:12px;padding:12px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.08);backdrop-filter:blur(6px)}
-.card:hover{transform:translateY(-6px);transition:transform .18s}
-.site-logo{width:56px;height:56px;object-fit:contain;margin-bottom:8px;border-radius:10px;background:white;padding:6px;box-shadow:0 4px 12px rgba(0,0,0,0.06)}
-.card a,.card label{display:block;font-weight:700;color:inherit;text-decoration:none;cursor:pointer}
-.card small{display:block;margin-top:6px;color:var(--muted)}
-.calendar{max-width:420px;margin:0 auto;text-align:center}
-#calendar-title{font-weight:700;margin-bottom:8px}
-table.calendar-table{width:100%;border-collapse:collapse;margin-top:8px}
-table.calendar-table th,table.calendar-table td{padding:8px;border:1px solid rgba(0,0,0,0.06);text-align:center}
-table.calendar-table th{background:rgba(0,0,0,0.04);font-weight:700}
-.today-circle{display:inline-block;width:36px;height:36px;line-height:36px;border-radius:50%;background:var(--accent);color:#fff}
-input,textarea,select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px}
-button.main-btn{padding:8px 10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:700}
-.row{display:flex;gap:14px;align-items:flex-start}
-.col{flex:1;min-width:260px}
-ul.todo-list{list-style:none;padding:0;margin:0}
-ul.todo-list li{display:flex;gap:8px;align-items:center;padding:8px 6px;border-bottom:1px dashed rgba(0,0,0,0.04)}
-.done{ text-decoration:line-through;color:rgba(0,0,0,0.45)}
-.chat-box{max-height:240px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.98);border:1px solid rgba(0,0,0,0.04)}
-.msg{margin:6px 0;padding:8px;border-radius:10px;background:rgba(0,0,0,0.04)}
-.msg.me{background:var(--accent);color:#fff;text-align:right}
-.bg-gallery{display:flex;gap:8px;flex-wrap:wrap}
-.bg-thumb{width:80px;height:54px;border-radius:8px;background-size:cover;background-position:center;cursor:pointer;border:2px solid rgba(0,0,0,0.06)}
-@media (max-width:900px){ .row{flex-direction:column} .calendar{max-width:100%} }
-</style>
-</head>
-<body>
-  <div class="container">
-    <header class="header">
-      <div class="datetime" role="region" aria-live="polite">
-        <span id="greeting" class="greeting">שלום!</span>
-        <span id="datetime">טוען...</span>
-      </div>
-
-      <div class="tabs" role="tablist" aria-label="כרטיסיות">
-        <button class="tab-btn active" data-tab="home">דף הבית</button>
-        <button class="tab-btn" data-tab="tools">כלים</button>
-        <button class="tab-btn" data-tab="personal">אישי</button>
-        <button class="tab-btn" data-tab="design">עיצוב</button>
-        <button class="tab-btn" data-tab="map">מפה</button>
-      </div>
-    </header>
-
-    <!-- HOME (עכשיו עם הוספת קיצורים) -->
-    <section id="home" class="panel active" role="tabpanel">
-      <div class="search-row">
-        <input id="google-search" type="text" placeholder="חפש בגוגל..." aria-label="חיפוש בגוגל">
-        <button id="search-btn" class="main-btn">חפש</button>
-      </div>
-
-      <div class="controls">
-        <!-- הוספת קיצורי דרך כאן (הועבר מ'אישי') -->
-        <label class="card" style="display:flex;align-items:center;gap:8px;">
-          <input id="shortcut-title" type="text" placeholder="שם (אופציונלי)" style="width:180px">
-          <input id="shortcut-url" type="text" placeholder="https://..." style="width:300px">
-          <button id="add-shortcut" class="main-btn">הוסף קישור</button>
-          <button id="export-shortcuts" style="background:#16a085">ייצא JSON</button>
-        </label>
-      </div>
-
-      <div class="row">
-        <div class="col">
-          <div class="grid" id="home-grid">
-            <!-- כרטיסים סטטיים — לוגואים נטענים דרך google favicons -->
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=kore.co.il" alt="Kore" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;56&quot; height=&quot;56&quot;></svg>'">
-              <a href="https://www.kore.co.il/" target="_blank" rel="noopener">Kore - חדשות</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=amazon.com" alt="Amazon">
-              <a href="https://www.amazon.com" target="_blank" rel="noopener">Amazon</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=ebay.com" alt="eBay">
-              <a href="https://www.ebay.com" target="_blank" rel="noopener">eBay</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=zap.co.il" alt="Zap">
-              <a href="https://www.zap.co.il/" target="_blank" rel="noopener">Zap</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=chat.openai.com" alt="ChatGPT">
-              <a href="https://chat.openai.com" target="_blank" rel="noopener">צ'אט GPT</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=mail.google.com" alt="Gmail">
-              <a href="https://mail.google.com" target="_blank" rel="noopener">Gmail</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=outlook.live.com" alt="Outlook">
-              <a href="https://outlook.live.com" target="_blank" rel="noopener">Outlook</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=drive.google.com" alt="Google Drive">
-              <a href="https://drive.google.com" target="_blank" rel="noopener">Google Drive</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=dropbox.com" alt="Dropbox">
-              <a href="https://www.dropbox.com" target="_blank" rel="noopener">Dropbox</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=youtube.com" alt="YouTube">
-              <a href="https://www.youtube.com" target="_blank" rel="noopener">YouTube</a>
-            </div>
-
-            <div class="card">
-              <img class="site-logo" src="https://www.google.com/s2/favicons?sz=64&domain=ims.gov.il" alt="IMS">
-              <a href="https://www.ims.gov.il/" target="_blank" rel="noopener">מזג אוויר (IMS)</a>
-            </div>
-
-            <!-- כאן יתווספו כרטיסי משתמש (class user-shortcut) דינמית -->
-          </div>
-        </div>
-
-        <div class="col">
-          <div class="calendar" id="calendar-panel">
-            <div id="calendar-title">טוען...</div>
-            <table class="calendar-table" id="calendar-table" role="table" aria-label="לוח שנה"></table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TOOLS -->
-    <section id="tools" class="panel" role="tabpanel">
-      <div class="row">
-        <div class="col">
-          <h3>מחשבון מהיר</h3>
-          <div class="card">
-            <input id="calc-input" type="text" placeholder="הקלד ביטוי (למשל 12+5*3)" />
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <button id="calc-eval" class="main-btn">חשב</button>
-              <button id="calc-clear" style="background:#777">נקה</button>
-            </div>
-            <div id="calc-result" class="muted" style="margin-top:8px"></div>
-          </div>
-
-          <h3 style="margin-top:12px">סטופר / טיימר</h3>
-          <div class="card">
-            <div id="timer-display" style="font-weight:700;font-size:20px;text-align:center">00:00:00</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;justify-content:center">
-              <button id="start-timer" class="main-btn">התחל</button>
-              <button id="pause-timer" style="background:#f39c12">השהה</button>
-              <button id="reset-timer" style="background:#c0392b">אפס</button>
-              <input id="set-minutes" type="number" min="0" placeholder="דקות (טיימר)" style="width:120px" />
-              <button id="start-countdown" style="background:#16a085">התחל טיימר</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="col">
-          <h3>תרגום מהיר</h3>
-          <div class="card">
-            <textarea id="translate-text" rows="4" placeholder="הכנס טקסט לתרגום..."></textarea>
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <select id="translate-to">
-                <option value="he">עברית</option>
-                <option value="en">אנגלית</option>
-                <option value="es">ספרדית</option>
-                <option value="fr">צרפתית</option>
-              </select>
-              <button id="do-translate" class="main-btn">תרגם (Google)</button>
-              <button id="swap-lang" style="background:#888">החלף</button>
-            </div>
-            <small class="muted">יפתח את Google Translate בחלון חדש</small>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PERSONAL -->
-    <section id="personal" class="panel" role="tabpanel">
-      <div class="row">
-        <div class="col">
-          <h3>פתקים אישיים</h3>
-          <div class="card">
-            <textarea id="notes-area" rows="8" placeholder="הערות — נשמרות בדפדפן"></textarea>
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <button id="save-notes" class="main-btn">שמור</button>
-              <button id="clear-notes" style="background:#999">נקה</button>
-            </div>
-          </div>
-
-          <h3 style="margin-top:12px">רשימת משימות</h3>
-          <div class="card">
-            <div style="display:flex;gap:8px;margin-bottom:8px">
-              <input id="todo-input" type="text" placeholder="הוסף משימה..." />
-              <button id="add-todo" class="main-btn">הוסף</button>
-            </div>
-            <ul id="todo-list" class="todo-list" aria-live="polite"></ul>
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <button id="clear-done" style="background:#888">נקה מסומנות</button>
-              <button id="clear-all" style="background:#c0392b">נקה הכל</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="col">
-          <h3>קיצורי דרך מתקדמים (רשימה)</h3>
-          <div class="card">
-            <div id="shortcuts-area" style="margin-top:10px"></div>
-          </div>
-
-          <!-- gallery removed from personal and moved to design -->
-        </div>
-      </div>
-    </section>
-
-    <!-- DESIGN (כאן נמצא כעת גלריית הרקעים) -->
-    <section id="design" class="panel" role="tabpanel">
-      <div class="row">
-        <div class="col">
-          <h3>שינוי פונט</h3>
-          <div class="card">
-            <select id="font-select">
-              <option value="'Assistant', Arial, sans-serif">Assistant (ברירת מחדל)</option>
-              <option value="'Varela Round', Arial, sans-serif">Varela Round</option>
-              <option value="'Courier New', monospace">Monospace</option>
-              <option value="'Times New Roman', serif">Times</option>
-            </select>
-            <div style="margin-top:8px"><button id="apply-font" class="main-btn">החל פונט</button></div>
-          </div>
-
-          <h3 style="margin-top:12px">חגים / תאריכים חשובים</h3>
-          <div class="card">
-            <div style="display:flex;gap:8px">
-              <input id="holiday-date" type="date" />
-              <input id="holiday-title" type="text" placeholder="שם האירוע" />
-            </div>
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <button id="add-holiday" class="main-btn">הוסף</button>
-            </div>
-            <ul id="holidays-list" style="margin-top:8px"></ul>
-          </div>
-        </div>
-
-        <div class="col">
-          <h3>ניהול רקע </h3>
-          <div class="card">
-            <div style="display:flex;gap:8px;align-items:center">
-              <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
-                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'></svg>" style="width:40px;height:40px;background:#fff;padding:6px;border-radius:8px">
-                <span>העלה רקע</span>
-                <input id="bg-input-design" type="file" accept="image/*" style="display:none">
-              </label>
-              <button id="clear-bg-design" class="main-btn">נקה רקע</button>
-              <button id="restore-default-design" style="background:#f39c12">רקע ברירת מחדל</button>
-            </div>
-
-            <div style="display:flex;gap:8px;margin-top:12px">
-              <button id="save-bg-manual" class="main-btn">שמור רקע (אם הועלה)</button>
-              <button id="clear-saved-bg" style="background:#e74c3c">מחק רקע שנשמר</button>
-            </div>
-            <div style="margin-top:8px">
-              <button id="randomize-background" class="main-btn">בחר רקע מובנה אקראי</button>
-            </div>
-
-            <hr style="margin:12px 0">
-            <div>
-              <div id="bg-gallery" class="bg-gallery"></div>
-              <div style="display:flex;gap:8px;margin-top:10px">
-                <button id="shuffle-bg" class="main-btn">רקע אקראי</button>
-                <button id="reset-bg" style="background:#f39c12">אפס רקע</button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- MAP -->
-    <section id="map" class="panel" role="tabpanel">
-      <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:10px">
-        <input id="map-search" type="text" placeholder="חפש מיקום במפה (כתובת/עיר)..." style="max-width:600px" />
-        <button id="map-search-btn" class="main-btn">חפש במפה</button>
-      </div>
-      <div style="width:100%;height:520px;">
-        <iframe id="gmap-frame" src="https://www.google.com/maps?q=Tel+Aviv,Israel&output=embed" style="width:100%;height:100%;border:0;border-radius:8px" allowfullscreen loading="lazy"></iframe>
-      </div>
-      <small class="muted" style="display:block;text-align:center;margin-top:8px">המפה היא Google Maps (embed) — חפש כתובת ו/או גרור כדי לראות פרטים.</small>
-    </section>
-
-    <footer style="text-align:center;margin-top:12px;color:var(--muted)">דשבורד מקומי — כל הנתונים נשמרים בדפדפן שלך</footer>
-  </div>
-
-<script>
-/* ===== Tabs ===== */
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const id = btn.dataset.tab;
-    document.querySelectorAll('section.panel').forEach(s=> s.id === id ? s.classList.add('active') : s.classList.remove('active'));
-  });
-});
-
-/* ===== Date/Time/Greeting ===== */
-function updateDateTime(){
-  const now = new Date();
-  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-  document.getElementById('datetime').textContent = `📅 ${now.toLocaleDateString('he-IL', opts)} ⏰ ${now.toLocaleTimeString('he-IL')}`;
-  const h = now.getHours();
-  const greeting = (h>=5 && h<12)?'בוקר טוב ☀️':(h<17)?'צהריים טובים 🌤️':(h<21)?'ערב טוב 🌆':'לילה טוב 🌙';
-  document.getElementById('greeting').textContent = greeting;
-}
-setInterval(updateDateTime,1000); updateDateTime();
-
-/* ===== Google Search ===== */
-const searchInput = document.getElementById('google-search'), searchBtn = document.getElementById('search-btn');
-function searchGoogle(){ const q=searchInput.value.trim(); if(!q) return; window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank'); }
-searchBtn.addEventListener('click', searchGoogle);
-searchInput.addEventListener('keydown', e=>{ if(e.key==='Enter') searchGoogle(); });
-
-/* ===== Calendar ===== */
-function generateCalendar(){
-  const now = new Date();
-  const year = now.getFullYear(), month = now.getMonth(), today = now.getDate();
-  const monthNames=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
-  const days=["א","ב","ג","ד","ה","ו","ש"];
-  document.getElementById('calendar-title').textContent = `${monthNames[month]} ${year}`;
-  const firstDay = new Date(year,month,1).getDay(); // 0=Sun
-  const lastDate = new Date(year,month+1,0).getDate();
-  let html = '<tr>';
-  for(let d of days) html += `<th>${d}</th>`; html += '</tr><tr>';
-  let dayCount = 0;
-  for(let i=0;i<firstDay;i++){ html += '<td class="empty"></td>'; dayCount++; }
-  for(let d=1; d<=lastDate; d++){
-    if(d===today) html += `<td><span class="today-circle">${d}</span></td>`;
-    else html += `<td>${d}</td>`;
-    dayCount++;
-    if(dayCount%7===0) html += '</tr><tr>';
-  }
-  while(dayCount%7!==0){ html += '<td class="empty"></td>'; dayCount++; }
-  html += '</tr>';
-  document.getElementById('calendar-table').innerHTML = html;
-}
-generateCalendar();
-
-/* ===== Background (upload + localStorage) ===== */
-const BG_KEY = 'dashboard_bg_v3';
-function applyBackground(v){
-  if(!v){ document.body.style.background = 'linear-gradient(135deg,#b6f0e1,#c6d9ff)'; return; }
-  if(v.startsWith('linear')){ document.body.style.background = v; } else {
-    document.body.style.background = `linear-gradient(rgba(116,235,213,0.5), rgba(172,182,229,0.5)), url(${v})`;
-    document.body.style.backgroundSize = 'cover'; document.body.style.backgroundPosition = 'center';
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hebrew Personal Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Added Babel for in-browser JSX transpilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Assistant', Arial, sans-serif;
+      overflow: hidden; /* Prevent body scroll, handle scrolling in main content */
+    }
+    .animated-bg {
+      background: linear-gradient(300deg, #a8e0ff, #c6d9ff, #e3d3ff);
+      background-size: 240% 240%;
+      animation: gradient-animation 18s ease infinite;
+    }
+    @keyframes gradient-animation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.4);
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
   }
 }
-(function(){ const s = localStorage.getItem(BG_KEY); if(s) applyBackground(s); })();
-
-function handleBgFileInput(inputEl){
-  inputEl.addEventListener('change', function(){
-    const f = this.files && this.files[0]; if(!f) return;
-    const reader = new FileReader(); reader.onload = function(e){
-      const data = e.target.result;
-      try{ localStorage.setItem(BG_KEY, data); applyBackground(data); alert('רקע נשמר בדפדפן'); } catch(err){ applyBackground(data); alert('הרקע הותקן אך לא נשמר (גדול מדי ל-localStorage)'); }
-    }; reader.readAsDataURL(f);
-  });
-}
-const bgInputDesign = document.getElementById('bg-input-design');
-if(bgInputDesign) handleBgFileInput(bgInputDesign);
-
-document.getElementById('clear-bg-design').addEventListener('click', ()=>{ localStorage.removeItem(BG_KEY); applyBackground(null); alert('הרקע הוסר'); });
-document.getElementById('restore-default-design').addEventListener('click', ()=> applyBackground(null));
-document.getElementById('save-bg-manual').addEventListener('click', ()=>{ const bg = document.body.style.background || ''; if(!bg) return alert('אין רקע פעיל לשמירה'); try{ localStorage.setItem(BG_KEY, bg); alert('רקע נשמר'); } catch(e){ alert('לא ניתן לשמור רקע זה'); }});
-document.getElementById('clear-saved-bg').addEventListener('click', ()=>{ localStorage.removeItem(BG_KEY); applyBackground(null); alert('הרקע הוסר')});
-document.getElementById('randomize-background').addEventListener('click', ()=>{ const builtIn = ['linear-gradient(120deg,#89f7fe,#66a6ff)','linear-gradient(120deg,#fdfbfb,#ebedee)','https://images.unsplash.com/photo-1503264116251-35a269479413?q=80&w=1200&auto=format&fit=crop','https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop']; const r=builtIn[Math.floor(Math.random()*builtIn.length)]; applyBackground(r); localStorage.setItem(BG_KEY,r); });
-/* ===== Built-in gallery population (now in design) ===== */
-const builtInArr = ['linear-gradient(120deg,#89f7fe,#66a6ff)','linear-gradient(120deg,#fdfbfb,#ebedee)','https://images.unsplash.com/photo-1503264116251-35a269479413?q=80&w=1200&auto=format&fit=crop','https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop'];
-const gallery = document.getElementById('bg-gallery');
-function populateGallery(){ if(!gallery) return; gallery.innerHTML=''; builtInArr.forEach(b=>{ const d=document.createElement('div'); d.className='bg-thumb'; d.style.backgroundImage = b.startsWith('linear') ? b : `url(${b})`; d.addEventListener('click', ()=>{ applyBackground(b); localStorage.setItem(BG_KEY,b); }); gallery.appendChild(d); }); }
-populateGallery();
-
-document.getElementById('shuffle-bg').addEventListener('click', ()=>{ const r = builtInArr[Math.floor(Math.random()*builtInArr.length)]; applyBackground(r); localStorage.setItem(BG_KEY,r); });
-document.getElementById('reset-bg').addEventListener('click', ()=>{ localStorage.removeItem(BG_KEY); applyBackground(null); });
-
-/* ===== Shortcuts handling (localStorage + adding to home grid) ===== */
-const SHORT_KEY = 'dashboard_shortcuts_v3';
-function getDomainFromUrl(url){ try{ return (new URL(url)).hostname; } catch(e){ return url; } }
-function updateHomeShortcutCards(arr){
-  const homeGrid = document.getElementById('home-grid');
-  if(!homeGrid) return;
-  homeGrid.querySelectorAll('.card.user-shortcut').forEach(n => n.remove());
-  arr.forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'card user-shortcut';
-    const img = document.createElement('img');
-    img.className = 'site-logo';
-    const domain = getDomainFromUrl(s.url);
-    img.src = `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domain)}`;
-    img.alt = s.title || domain;
-    img.onerror = function(){ this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"></svg>'; };
-    const a = document.createElement('a');
-    a.href = s.url; a.target = '_blank'; a.rel = 'noopener';
-    a.textContent = s.title || s.url;
-    card.appendChild(img); card.appendChild(a);
-    homeGrid.appendChild(card);
-  });
-}
-function updateShortcutsPanel(){
-  const raw = localStorage.getItem(SHORT_KEY);
-  const arr = raw ? JSON.parse(raw) : [];
-  const panel = document.getElementById('shortcuts-panel');
-  if(panel) {
-    panel.innerHTML = '';
-    arr.forEach(s=>{ const a=document.createElement('a'); a.href=s.url; a.target='_blank'; a.rel='noopener'; a.textContent = s.title || s.url; panel.appendChild(a); panel.appendChild(document.createElement('br')); });
-  }
-  updateHomeShortcutCards(arr);
-}
-function renderShortcuts(arr){
-  const shortcutsArea = document.getElementById('shortcuts-area');
-  if(!shortcutsArea) return;
-  shortcutsArea.innerHTML = '';
-  arr.forEach((s, idx) => {
-    const wrap = document.createElement('div');
-    wrap.style.display = 'flex';
-    wrap.style.justifyContent = 'space-between';
-    wrap.style.alignItems = 'center';
-    wrap.style.marginBottom = '8px';
-    const a = document.createElement('a');
-    a.href = s.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = s.title || s.url;
-    const rm = document.createElement('button');
-    rm.textContent = 'מחק'; rm.style.background = '#e74c3c'; rm.style.padding = '6px';
-    rm.addEventListener('click', ()=>{ arr.splice(idx,1); localStorage.setItem(SHORT_KEY, JSON.stringify(arr)); renderShortcuts(arr); updateShortcutsPanel(); });
-    wrap.appendChild(a); wrap.appendChild(rm);
-    shortcutsArea.appendChild(wrap);
-  });
-  updateShortcutsPanel();
-}
-(function(){ const raw = localStorage.getItem(SHORT_KEY); const arr = raw ? JSON.parse(raw) : []; renderShortcuts(arr); })();
-
-document.getElementById('add-shortcut').addEventListener('click', ()=>{
-  const t = document.getElementById('shortcut-title').value.trim();
-  const u = document.getElementById('shortcut-url').value.trim();
-  if(!u) return alert('הזן URL');
-  const raw = localStorage.getItem(SHORT_KEY); const arr = raw ? JSON.parse(raw) : [];
-  arr.push({ title: t || u, url: u });
-  localStorage.setItem(SHORT_KEY, JSON.stringify(arr));
-  document.getElementById('shortcut-title').value = ''; document.getElementById('shortcut-url').value = '';
-  renderShortcuts(arr);
-});
-
-document.getElementById('export-shortcuts').addEventListener('click', ()=>{
-  const raw = localStorage.getItem(SHORT_KEY); if(!raw) return alert('אין קיצורים לייצוא');
-  const a = document.createElement('a'); a.href = 'data:application/json;charset=utf-8,'+encodeURIComponent(raw); a.download='shortcuts.json'; a.click();
-});
-
-/* ===== Calculator (safe-ish) ===== */
-document.getElementById('calc-eval').addEventListener('click', ()=>{
-  const expr = document.getElementById('calc-input').value.trim(); const out = document.getElementById('calc-result');
-  if(!expr){ out.textContent=''; return; }
-  if(!/^[0-9+\-*/().%\s]+$/.test(expr)){ out.textContent='ביטוי לא חוקי'; return; }
-  try{ const sanitized = expr.replace(/%/g,'/100'); const val = Function('"use strict"; return ('+sanitized+')')(); out.textContent = 'תוצאה: ' + val; } catch(e){ out.textContent='שגיאה בחישוב'; }
-});
-document.getElementById('calc-clear').addEventListener('click', ()=>{ document.getElementById('calc-input').value=''; document.getElementById('calc-result').textContent=''; });
-
-/* ===== Stopwatch / Timer ===== */
-let timerInterval=null, elapsed=0, running=false;
-const timerDisplay = document.getElementById('timer-display');
-function formatHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60; return [h,m,sec].map(v=>String(v).padStart(2,'0')).join(':'); }
-function updateTimer(){ timerDisplay.textContent = formatHMS(elapsed); }
-document.getElementById('start-timer').addEventListener('click', ()=>{ if(running) return; running=true; const start=Date.now()-elapsed*1000; timerInterval=setInterval(()=>{ elapsed=Math.floor((Date.now()-start)/1000); updateTimer(); },250); });
-document.getElementById('pause-timer').addEventListener('click', ()=>{ if(timerInterval){ clearInterval(timerInterval); timerInterval=null; running=false; }});
-document.getElementById('reset-timer').addEventListener('click', ()=>{ if(timerInterval){ clearInterval(timerInterval); timerInterval=null; } running=false; elapsed=0; updateTimer(); });
-document.getElementById('start-countdown').addEventListener('click', ()=>{ const mins = Number(document.getElementById('set-minutes').value) || 0; if(mins<=0){ alert('הזן דקות לטיימר'); return; } if(timerInterval){ clearInterval(timerInterval); timerInterval=null; } running=true; const target = Date.now() + mins*60000; timerInterval=setInterval(()=>{ const remaining = Math.max(0, Math.ceil((target - Date.now())/1000)); elapsed = remaining; updateTimer(); if(remaining<=0){ clearInterval(timerInterval); timerInterval=null; running=false; alert('הטיימר הושלם'); elapsed=0; updateTimer(); } },250); });
-
-/* ===== Translate quick ===== */
-document.getElementById('do-translate').addEventListener('click', ()=>{ const txt = document.getElementById('translate-text').value.trim(); if(!txt) return alert('הכנס טקסט'); const to = document.getElementById('translate-to').value || 'he'; const url = `https://translate.google.com/?sl=auto&tl=${encodeURIComponent(to)}&text=${encodeURIComponent(txt)}&op=translate`; window.open(url,'_blank'); });
-document.getElementById('swap-lang').addEventListener('click', ()=>{ const sel=document.getElementById('translate-to'); sel.selectedIndex=(sel.selectedIndex+1)%sel.options.length; });
-
-/* ===== Map search (iframe to Google Maps) ===== */
-const gmapFrame = document.getElementById('gmap-frame');
-document.getElementById('map-search-btn').addEventListener('click', ()=>{ const q = document.getElementById('map-search').value.trim() || 'Tel Aviv, Israel'; gmapFrame.src = 'https://www.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed'; });
-
-/* ===== Notes (localStorage) ===== */
-const NOTES_KEY = 'dashboard_notes_v3';
-const notesArea = document.getElementById('notes-area');
-document.getElementById('save-notes').addEventListener('click', ()=>{ localStorage.setItem(NOTES_KEY, notesArea.value); alert('פתק נשמר'); });
-document.getElementById('clear-notes').addEventListener('click', ()=>{ if(confirm('למחוק את הפתק?')){ notesArea.value=''; localStorage.removeItem(NOTES_KEY); }});
-(function(){ const v = localStorage.getItem(NOTES_KEY); if(v) notesArea.value = v; })();
-
-/* ===== To-Do (localStorage) ===== */
-const TODO_KEY = 'dashboard_todo_v3'; const todoListEl = document.getElementById('todo-list');
-function renderTodos(arr){ todoListEl.innerHTML=''; arr.forEach((it,idx)=>{ const li=document.createElement('li'); const ch=document.createElement('input'); ch.type='checkbox'; ch.checked=it.done; ch.addEventListener('change', ()=>{ arr[idx].done = ch.checked; localStorage.setItem(TODO_KEY, JSON.stringify(arr)); renderTodos(arr); }); const span=document.createElement('span'); span.textContent = it.txt; if(it.done) span.classList.add('done'); const del=document.createElement('button'); del.textContent='✖'; del.style.background='#e74c3c'; del.style.padding='4px 6px'; del.addEventListener('click', ()=>{ arr.splice(idx,1); localStorage.setItem(TODO_KEY, JSON.stringify(arr)); renderTodos(arr); }); li.appendChild(ch); li.appendChild(span); li.appendChild(del); todoListEl.appendChild(li); }); }
-document.getElementById('add-todo').addEventListener('click', ()=>{ const txt=document.getElementById('todo-input').value.trim(); if(!txt) return; const raw=localStorage.getItem(TODO_KEY); const arr=raw?JSON.parse(raw):[]; arr.push({txt,done:false}); localStorage.setItem(TODO_KEY, JSON.stringify(arr)); renderTodos(arr); document.getElementById('todo-input').value=''; });
-document.getElementById('clear-done').addEventListener('click', ()=>{ const raw=localStorage.getItem(TODO_KEY); const arr=raw?JSON.parse(raw):[]; const filtered=arr.filter(i=>!i.done); localStorage.setItem(TODO_KEY, JSON.stringify(filtered)); renderTodos(filtered); });
-document.getElementById('clear-all').addEventListener('click', ()=>{ if(confirm('למחוק את כל המשימות?')){ localStorage.removeItem(TODO_KEY); renderTodos([]); }});
-(function(){ const raw=localStorage.getItem(TODO_KEY); const arr=raw?JSON.parse(raw):[]; renderTodos(arr); })();
-
-/* ===== Shortcuts panel placeholder (for updateShortcutsPanel if used) ===== */
-(function(){ const div = document.createElement('div'); div.id='shortcuts-panel'; div.style.display='none'; document.body.appendChild(div); })();
-
-/* ===== Holidays list ===== */
-const HOL_KEY = 'dashboard_holidays_v1';
-function loadHolidays(){ const raw=localStorage.getItem(HOL_KEY); const arr=raw?JSON.parse(raw):[]; const ul=document.getElementById('holidays-list'); ul.innerHTML=''; arr.forEach((h,idx)=>{ const li=document.createElement('li'); li.textContent=`${h.date} — ${h.title}`; const rm=document.createElement('button'); rm.textContent='מחק'; rm.style.marginLeft='8px'; rm.addEventListener('click', ()=>{ arr.splice(idx,1); localStorage.setItem(HOL_KEY, JSON.stringify(arr)); loadHolidays(); }); li.appendChild(rm); ul.appendChild(li); }); }
-document.getElementById('add-holiday').addEventListener('click', ()=>{ const d=document.getElementById('holiday-date').value; const t=document.getElementById('holiday-title').value.trim(); if(!d||!t) return alert('בחר תאריך ושם'); const raw=localStorage.getItem(HOL_KEY); const arr=raw?JSON.parse(raw):[]; arr.push({date:d,title:t}); localStorage.setItem(HOL_KEY, JSON.stringify(arr)); loadHolidays(); });
-loadHolidays();
-
-/* ===== Init ===== */
-(function init(){
-  const savedBg = localStorage.getItem(BG_KEY); if(savedBg) applyBackground(savedBg);
-  populateGallery();
-  updateShortcutsPanel();
-})();
 </script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div id="root"></div>
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+    import ReactDOM from 'react-dom/client';
+
+    // Formerly types.ts
+    const Tab = {
+      Home: 'home',
+      Tools: 'tools',
+      Personal: 'personal',
+      History: 'history',
+      Design: 'design',
+      Map: 'map',
+      News: 'news',
+      Music: 'music',
+    };
+
+    // Formerly constants.ts
+    const DEFAULT_SHORTCUTS = [
+      { title: 'Kore - חדשות', url: 'https://www.kore.co.il/' },
+      { title: 'Amazon', url: 'https://www.amazon.com' },
+      { title: 'eBay', url: 'https://www.ebay.com' },
+      { title: 'Zap', url: 'https://www.zap.co.il/' },
+      { title: 'צ\'אט GPT', url: 'https://chat.openai.com' },
+      { title: 'Gmail', url: 'https://mail.google.com' },
+      { title: 'Outlook', url: 'https://outlook.live.com' },
+      { title: 'Google Drive', url: 'https://drive.google.com' },
+      { title: 'Dropbox', url: 'https://www.dropbox.com' },
+      { title: 'YouTube', url: 'https://www.youtube.com' },
+      { title: 'מזג אוויר (IMS)', url: 'https://www.ims.gov.il/' },
+    ];
+    const PRESET_BACKGROUNDS = [
+      'linear-gradient(135deg,#b6f0e1,#c6d9ff)', // Default
+      'linear-gradient(120deg,#89f7fe,#66a6ff)',
+      'linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%)', // Lavender
+      'linear-gradient(120deg,#fdfbfb,#ebedee)', // Light Gray
+      'linear-gradient(to right, #43e97b 0%, #38f9d7 100%)', // Green
+      'linear-gradient(to top, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)', // Pink
+      'https://images.unsplash.com/photo-1503264116251-35a269479413?q=80&w=1920&auto=format&fit=crop', // Neon City
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920&auto=format&fit=crop', // Mountain Landscape
+      'https://images.unsplash.com/photo-1553095066-5014bc7b7f2d?q=80&w=1920&auto=format&fit=crop', // Abstract Smoke
+      'https://images.unsplash.com/photo-1487147264018-f937fba0c817?q=80&w=1920&auto=format&fit=crop', // Pastel Sky
+      'https://images.unsplash.com/photo-1536514498073-50e69d39c6cf?q=80&w=1920&auto=format&fit=crop', // Aurora Borealis
+      'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=1920&auto=format&fit=crop', // Forest Lake
+    ];
+
+    // Formerly hooks/useLocalStorage.ts
+    function useLocalStorage(key, initialValue) {
+      const [storedValue, setStoredValue] = useState(() => {
+        if (typeof window === 'undefined') {
+          return initialValue;
+        }
+        try {
+          const item = window.localStorage.getItem(key);
+          return item ? JSON.parse(item) : initialValue;
+        } catch (error) {
+          console.error(error);
+          return initialValue;
+        }
+      });
+
+      const setValue = (value) => {
+        try {
+          const valueToStore = value instanceof Function ? value(storedValue) : value;
+          setStoredValue(valueToStore);
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+      
+      useEffect(() => {
+        const handleStorageChange = (e) => {
+          if (e.key === key && e.newValue !== null) {
+            try {
+              setStoredValue(JSON.parse(e.newValue));
+            } catch (error) {
+              console.error(`Error parsing storage change for key "${key}":`, error);
+            }
+          } else if (e.key === key && e.newValue === null) {
+             setStoredValue(initialValue);
+          }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+          window.removeEventListener('storage', handleStorageChange);
+        };
+      }, [key]);
+
+      return [storedValue, setValue];
+    }
+
+    // Formerly components/Shared.tsx
+    const HEBREW_QUOTES = [
+        { quote: "אם אין אני לי, מי לי? וכשאני לעצמי, מה אני? ואם לא עכשיו, אימתי?", author: "הלל הזקן" },
+        { quote: "כל אדם צריך שיהיה לו משהו, בשביל שיוכל לתת.", author: "רבי נחמן מברסלב" },
+        { quote: "הצלחה היא היכולת לעבור מכישלון לכישלון מבלי לאבד את ההתלהבות.", author: "וינסטון צ'רצ'יל" },
+        { quote: "הדרך הטובה ביותר לחזות את העתיד היא ליצור אותו.", author: "פיטר דרוקר" },
+        { quote: "דע מאין באת, ולאן אתה הולך, ולפני מי אתה עתיד ליתן דין וחשבון.", author: "פרקי אבות" },
+        { quote: "היום הוא היום הראשון של שארית חייך.", author: "פתגם עממי" },
+        { quote: "המעז מנצח.", author: "פתגם" },
+        { quote: "האושר אינו יעד, אלא דרך חיים.", author: "פתגם" },
+        { quote: "החיים הם מה שקורה לך בזמן שאתה עסוק בלתכנן תוכניות אחרות.", author: "ג'ון לנון" },
+        { quote: "אל תבכה כי זה נגמר, תחייך כי זה קרה.", author: "ד\"ר סוס" },
+    ];
+    const QuoteOfTheDay = () => {
+        const [dailyQuote, setDailyQuote] = useState(null);
+        useEffect(() => {
+            const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+            const dayOfYear = Math.floor((Date.now() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+            const quoteIndex = dayOfYear % HEBREW_QUOTES.length;
+            setDailyQuote(HEBREW_QUOTES[quoteIndex]);
+        }, []);
+        if (!dailyQuote) return null;
+        return (
+            <div className="hidden lg:block max-w-sm pl-4">
+                <blockquote className="text-gray-700 italic text-right">
+                    <p>"{dailyQuote.quote}"</p>
+                </blockquote>
+                <cite className="block text-gray-500 text-sm mt-1 text-right">— {dailyQuote.author}</cite>
+            </div>
+        );
+    };
+    const icons = {
+      home: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>,
+      tools: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>,
+      personal: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>,
+      history: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>,
+      design: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-2 16.08c0-1.45.69-2.73 1.76-3.54.31-.24.5-.6.5-1.01V11c0-.45-.19-.84-.5-1.1C10.69 9.17 10 7.9 10 6.45c0-1.18.31-2.26.84-3.21-.62-.22-1.28-.34-2-.34-5.52 0-10 4.48-10 10 0 5.16 3.92 9.42 8.94 9.95.02.01.04.01.06.01V20c0-.55.45-1 1-1h1.08c.05 0 .1.01.14.02l.06.01c.21.03.42.05.63.05 1.08 0 2.06-.35 2.87-.95C14.16 19.34 13.21 21 12 21c-1.89 0-3.6-.9-4.69-2.33-.29.13-.56.28-.81.45zM20.71 10.5l-2.2-2.2c-.39-.39-1.02-.39-1.41 0L15 10.41l3.59 3.59L20.71 12c.39-.39.39-1.02 0-1.41zM13 12.01L15.99 15l-4.2 4.2c-.39.39-1.02.39-1.41 0s-.39-1.02 0-1.41L13 15.18V12.01z"/></svg>,
+      map: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-6.5 18-3.5-7-7-3.5L20.5 3z"/></svg>,
+      news: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>,
+      music: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z"/></svg>,
+    };
+    const Sidebar = ({ activeTab, setActiveTab }) => {
+        const tabs = [
+            { id: Tab.Home, label: 'דף הבית' },
+            { id: Tab.Tools, label: 'כלים' },
+            { id: Tab.Personal, label: 'אישי' },
+            { id: Tab.History, label: 'היסטוריה' },
+            { id: Tab.Design, label: 'עיצוב' },
+            { id: Tab.Map, label: 'מפה' },
+            { id: Tab.News, label: 'חדשות' },
+            { id: Tab.Music, label: 'מוזיקה' },
+        ];
+        return (
+            <aside className="w-64 bg-black/10 backdrop-blur-lg p-4 flex flex-col gap-2 shrink-0 h-full">
+                <h1 className="text-2xl font-bold text-center text-gray-800 mb-4 font-[Varela Round]">הדשבורד שלי</h1>
+                <nav className="flex flex-col gap-2">
+                    {tabs.map(tab => {
+                        const Icon = icons[tab.id];
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-4 py-3 px-4 rounded-xl text-right font-bold transition-all duration-200 ease-in-out transform hover:scale-105 ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-700 hover:bg-white/50'}`}
+                                role="tab"
+                                aria-selected={activeTab === tab.id}
+                            >
+                                <Icon className="w-6 h-6" />
+                                <span>{tab.label}</span>
+                            </button>
+                        )
+                    })}
+                </nav>
+            </aside>
+        );
+    };
+    const PageHeader = () => {
+        const [dateTime, setDateTime] = useState(new Date());
+        useEffect(() => {
+            const timer = setInterval(() => setDateTime(new Date()), 1000);
+            return () => clearInterval(timer);
+        }, []);
+        const getGreeting = () => {
+            const h = dateTime.getHours();
+            if (h >= 5 && h < 12) return 'בוקר טוב ☀️';
+            if (h >= 12 && h < 17) return 'צהריים טובים 🌤️';
+            if (h >= 17 && h < 21) return 'ערב טוב 🌆';
+            return 'לילה טוב 🌙';
+        };
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        return (
+            <header className="mb-4" role="banner">
+                <div className="bg-white/60 backdrop-blur-md p-4 px-6 rounded-2xl shadow-lg border border-white/30 flex justify-between items-center">
+                     <div className="text-right">
+                        <h2 className="font-bold text-2xl mb-1.5">{getGreeting()}</h2>
+                        <p className="text-md text-gray-600">
+                            {`📅 ${dateTime.toLocaleDateString('he-IL', dateOptions)} | ⏰ ${dateTime.toLocaleTimeString('he-IL')}`}
+                        </p>
+                    </div>
+                    <QuoteOfTheDay />
+                </div>
+            </header>
+        );
+    };
+    const Panel = ({ id, activeTab, children }) => {
+        return (
+            <section
+                role="tabpanel"
+                className={`${activeTab === id ? 'block' : 'hidden'}`}
+            >
+                {children}
+            </section>
+        );
+    };
+    const Card = ({ children, className = '', onClick }) => {
+        const baseClasses = "bg-white/50 backdrop-blur-xl rounded-2xl p-4 text-center shadow-lg border border-white/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-1";
+        const clickableClasses = onClick ? "cursor-pointer" : "";
+        return (
+            <div className={`${baseClasses} ${clickableClasses} ${className}`} onClick={onClick}>
+                {children}
+            </div>
+        );
+    };
+    const MainButton = ({ children, className, ...props }) => (
+        <button
+            className={`py-2.5 px-5 rounded-xl border-none bg-blue-600 text-white font-bold cursor-pointer hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:shadow-none flex items-center justify-center gap-2 ${className}`}
+            {...props}
+        >
+            {children}
+        </button>
+    );
+    const Input = ({ className, ...props }) => (
+        <input
+            className={`w-full p-2.5 rounded-xl border border-black/10 bg-white/70 text-base placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow shadow-sm focus:shadow-md ${className}`}
+            {...props}
+        />
+    );
+
+    // Formerly components/OtherPanels.tsx
+    const Calculator = () => {
+        const [expression, setExpression] = useState('');
+        const [result, setResult] = useState('');
+        const [history, setHistory] = useLocalStorage('dashboard_calc_history_v1', []);
+        
+        const calculate = () => {
+            if (!expression) { setResult(''); return; }
+            if (!/^[0-9+\-*/().%\s]+$/.test(expression)) { setResult('ביטוי לא חוקי'); return; }
+            try {
+                const sanitized = expression.replace(/%/g, '/100');
+                const val = Function('"use strict"; return (' + sanitized + ')')();
+                setResult('תוצאה: ' + val);
+                const newEntry = `${expression} = ${val}`;
+                setHistory(prev => [newEntry, ...prev].slice(0, 50));
+            } catch (e) {
+                setResult('שגיאה בחישוב');
+            }
+        };
+
+        return (
+            <>
+                <h3 className="text-xl font-bold mb-2 text-right">מחשבון מהיר</h3>
+                <Card>
+                    <Input value={expression} onChange={e => setExpression(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && calculate()} placeholder="הקלד ביטוי (למשל 12+5*3)" />
+                    <div className="flex gap-2 mt-2">
+                        <MainButton onClick={calculate}>חשב</MainButton>
+                        <MainButton onClick={() => { setExpression(''); setResult(''); }} className="bg-gray-600 hover:bg-gray-700">נקה</MainButton>
+                    </div>
+                    <div className="text-gray-600 mt-2 text-right min-h-[1.5rem]">{result}</div>
+                    {history.length > 0 && (
+                        <div className="mt-4 text-right">
+                            <div className="flex justify-between items-center mb-1">
+                                <h4 className="text-sm font-bold text-gray-700">היסטוריה</h4>
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm('האם לנקות את היסטוריית החישובים?')) {
+                                            setHistory([]);
+                                        }
+                                    }}
+                                    className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-600 px-2 py-1 rounded"
+                                >
+                                    נקה היסטוריה
+                                </button>
+                            </div>
+                            <ul className="max-h-32 overflow-y-auto border border-black/10 rounded-lg p-2 bg-gray-50/50 space-y-1 text-sm text-gray-700">
+                                {history.map((item, index) => (
+                                    <li
+                                        key={index}
+                                        onClick={() => setExpression(item.split(' = ')[0])}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setExpression(item.split(' = ')[0])}}
+                                        className="cursor-pointer hover:bg-gray-200 p-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        title="לחץ כדי להשתמש שוב בביטוי זה"
+                                        role="button"
+                                        tabIndex={0}
+                                    >
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </Card>
+            </>
+        );
+    };
+    const Timer = () => {
+        const [elapsed, setElapsed] = useState(0);
+        const [isRunning, setIsRunning] = useState(false);
+        const [timerMode, setTimerMode] = useState('stopwatch');
+        const [minutes, setMinutes] = useState('');
+        const intervalRef = useRef(null);
+        const formatHMS = (s) => {
+            const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+            return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
+        };
+        useEffect(() => {
+            if (isRunning) {
+                const startTime = Date.now() - (timerMode === 'stopwatch' ? elapsed * 1000 : 0);
+                const targetTime = Date.now() + elapsed * 1000;
+                
+                intervalRef.current = window.setInterval(() => {
+                    if (timerMode === 'stopwatch') {
+                        setElapsed(Math.floor((Date.now() - startTime) / 1000));
+                    } else {
+                        const remaining = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
+                        setElapsed(remaining);
+                        if (remaining <= 0) {
+                            setIsRunning(false);
+                            alert('הטיימר הושלם!');
+                            setElapsed(0);
+                        }
+                    }
+                }, 250);
+            }
+            return () => {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+            };
+        }, [isRunning, timerMode, elapsed]);
+        const handleStart = () => { setTimerMode('stopwatch'); setIsRunning(true); };
+        const handlePause = () => setIsRunning(false);
+        const handleReset = () => { setIsRunning(false); setElapsed(0); };
+        const handleStartCountdown = () => {
+            const mins = parseInt(minutes, 10);
+            if (isNaN(mins) || mins <= 0) { alert('הזן דקות לטיימר'); return; }
+            setTimerMode('countdown');
+            setElapsed(mins * 60);
+            setIsRunning(true);
+        };
+        return (
+            <>
+                <h3 className="text-xl font-bold mt-3 mb-2 text-right">סטופר / טיימר</h3>
+                <Card>
+                    <div className="font-bold text-3xl text-center font-mono tracking-wider">{formatHMS(elapsed)}</div>
+                    <div className="flex gap-2 flex-wrap mt-2 justify-center">
+                        <MainButton onClick={handleStart}>התחל</MainButton>
+                        <MainButton onClick={handlePause} className="bg-yellow-500 hover:bg-yellow-600">השהה</MainButton>
+                        <MainButton onClick={handleReset} className="bg-red-600 hover:bg-red-700">אפס</MainButton>
+                        <Input type="number" min="0" value={minutes} onChange={e => setMinutes(e.target.value)} placeholder="דקות (טיימר)" className="w-32"/>
+                        <MainButton onClick={handleStartCountdown} className="bg-teal-600 hover:bg-teal-700">התחל טיימר</MainButton>
+                    </div>
+                </Card>
+            </>
+        );
+    };
+    const ToolsPanel = () => {
+        const [textToTranslate, setTextToTranslate] = useState('');
+        const [lang, setLang] = useState('he');
+        const handleTranslate = () => {
+            if(!textToTranslate.trim()) return alert('הכנס טקסט');
+            const url = `https://translate.google.com/?sl=auto&tl=${encodeURIComponent(lang)}&text=${encodeURIComponent(textToTranslate)}&op=translate`;
+            window.open(url, '_blank');
+        };
+        return (
+            <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1 min-w-[260px]">
+                    <Calculator />
+                    <Timer />
+                </div>
+                <div className="flex-1 min-w-[260px]">
+                    <h3 className="text-xl font-bold mb-2 text-right">תרגום מהיר</h3>
+                    <Card>
+                        <textarea value={textToTranslate} onChange={e => setTextToTranslate(e.target.value)} rows={4} placeholder="הכנס טקסט לתרגום..." className="w-full p-2.5 rounded-xl border border-black/10 bg-white/70 text-base placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow shadow-sm focus:shadow-md"></textarea>
+                        <div className="flex gap-2 mt-2">
+                            <select value={lang} onChange={e => setLang(e.target.value)} className="p-2.5 rounded-xl border border-black/10 bg-white/70 text-base">
+                                <option value="he">עברית</option>
+                                <option value="en">אנגלית</option>
+                                <option value="es">ספרדית</option>
+                                <option value="fr">צרפתית</option>
+                            </select>
+                            <MainButton onClick={handleTranslate}>תרגם (Google)</MainButton>
+                        </div>
+                    </Card>
+                </div>
+            </div>
+        );
+    };
+    const Notes = () => {
+        const [notes, setNotes] = useLocalStorage('dashboard_notes_v3', '');
+        const [tempNotes, setTempNotes] = useState(notes);
+        useEffect(() => setTempNotes(notes), [notes]);
+        return (
+            <>
+                <h3 className="text-xl font-bold mb-2 text-right">פתקים אישיים</h3>
+                <Card className="text-right">
+                    <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} rows={8} placeholder="הערות — נשמרות בדפדפן" className="w-full p-2.5 rounded-xl border border-black/10 bg-white/70 text-base placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow shadow-sm focus:shadow-md"></textarea>
+                    <div className="flex gap-2 mt-2">
+                        <MainButton onClick={() => { setNotes(tempNotes); alert('פתק נשמר'); }}>שמור</MainButton>
+                        <MainButton onClick={() => { if(window.confirm('למחוק?')) setTempNotes(''); }} className="bg-gray-500 hover:bg-gray-600">נקה</MainButton>
+                    </div>
+                </Card>
+            </>
+        );
+    };
+    const TodoList = () => {
+        const [todos, setTodos] = useLocalStorage('dashboard_todo_v3', []);
+        const [newTodo, setNewTodo] = useState('');
+        const addTodo = () => {
+            if(!newTodo.trim()) return;
+            setTodos(prev => [...prev, {txt: newTodo.trim(), done: false}]);
+            setNewTodo('');
+        };
+        const toggleTodo = (index) => {
+            setTodos(prev => prev.map((todo, i) => i === index ? { ...todo, done: !todo.done } : todo));
+        };
+        const deleteTodo = (index) => {
+            setTodos(prev => prev.filter((_, i) => i !== index));
+        };
+        return (
+            <>
+                <h3 className="text-xl font-bold mt-3 mb-2 text-right">רשימת משימות</h3>
+                <Card className="text-right">
+                    <div className="flex gap-2 mb-3">
+                        <Input value={newTodo} onChange={e => setNewTodo(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTodo()} placeholder="הוסף משימה..." />
+                        <MainButton onClick={addTodo}>הוסף</MainButton>
+                    </div>
+                    <ul className="list-none p-0 m-0 max-h-60 overflow-y-auto">
+                        {todos.map((todo, i) => (
+                            <li key={i} className="flex gap-3 items-center p-2.5 border-b border-dashed border-black/10">
+                                <input type="checkbox" checked={todo.done} onChange={() => toggleTodo(i)} className="w-5 h-5 accent-blue-600 cursor-pointer" />
+                                <span className={`flex-grow ${todo.done ? 'line-through text-gray-400' : ''}`}>{todo.txt}</span>
+                                <button onClick={() => deleteTodo(i)} className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors">✖</button>
+                            </li>
+                        ))}
+                    </ul>
+                    {todos.length > 0 && (
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-black/10">
+                            <MainButton onClick={() => setTodos(p => p.filter(t => !t.done))} className="bg-gray-600 hover:bg-gray-700 text-sm">נקה מסומנות</MainButton>
+                            <MainButton onClick={() => { if(window.confirm('למחוק הכל?')) setTodos([]); }} className="bg-red-600 hover:bg-red-700 text-sm">נקה הכל</MainButton>
+                        </div>
+                    )}
+                </Card>
+            </>
+        );
+    };
+    const AdvancedShortcuts = () => {
+        const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v3', []);
+        const deleteShortcut = (index) => {
+            setShortcuts(prev => prev.filter((_, i) => i !== index));
+        };
+        return (
+            <>
+                <h3 className="text-xl font-bold mb-2 text-right">ניהול קישורים</h3>
+                <Card className="text-right">
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {shortcuts.map((s, i) => (
+                            <div key={i} className="flex justify-between items-center p-2 bg-white/50 rounded-lg">
+                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{s.title}</a>
+                                <button onClick={() => deleteShortcut(i)} className="bg-red-500 text-white rounded px-2 py-1 text-sm hover:bg-red-600 transition-colors">מחק</button>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </>
+        );
+    };
+    const PersonalPanel = () => (
+        <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 min-w-[260px]">
+                <Notes />
+                <TodoList />
+            </div>
+            <div className="flex-1 min-w-[260px]">
+                <AdvancedShortcuts />
+            </div>
+        </div>
+    );
+    const DesignPanel = ({ setFont, setBackground }) => {
+        const [holidays, setHolidays] = useLocalStorage('dashboard_holidays_v1', []);
+        const [newHolidayDate, setNewHolidayDate] = useState('');
+        const [newHolidayTitle, setNewHolidayTitle] = useState('');
+        const addHoliday = () => {
+            if (!newHolidayDate || !newHolidayTitle.trim()) return alert('בחר תאריך ושם');
+            setHolidays(prev => [...prev, { date: newHolidayDate, title: newHolidayTitle.trim() }]);
+            setNewHolidayDate('');
+            setNewHolidayTitle('');
+        };
+        const handleBgUpload = (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = event.target?.result;
+                setBackground(data);
+                alert('רקע הוחלף');
+            };
+            reader.readAsDataURL(file);
+        };
+        const handleRandomBg = () => {
+            const randomBg = PRESET_BACKGROUNDS[Math.floor(Math.random() * PRESET_BACKGROUNDS.length)];
+            setBackground(randomBg);
+        };
+        return (
+            <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1 min-w-[260px]">
+                    <h3 className="text-xl font-bold mb-2 text-right">שינוי פונט</h3>
+                    <Card>
+                        <select onChange={e => setFont(e.target.value)} className="w-full p-2.5 rounded-xl border border-black/10 bg-white/70 text-base">
+                            <option value="'Assistant', Arial, sans-serif">Assistant (ברירת מחדל)</option>
+                            <option value="'Varela Round', Arial, sans-serif">Varela Round</option>
+                            <option value="'Rubik', sans-serif">Rubik</option>
+                            <option value="'Heebo', sans-serif">Heebo</option>
+                            <option value="'Frank Ruhl Libre', serif">Frank Ruhl Libre</option>
+                            <option value="'Courier New', monospace">Monospace</option>
+                        </select>
+                    </Card>
+                    <h3 className="text-xl font-bold mt-3 mb-2 text-right">תאריכים חשובים</h3>
+                    <Card className="text-right">
+                        <div className="flex gap-2">
+                            <Input type="date" value={newHolidayDate} onChange={e => setNewHolidayDate(e.target.value)} />
+                            <Input placeholder="שם האירוע" value={newHolidayTitle} onChange={e => setNewHolidayTitle(e.target.value)} />
+                        </div>
+                        <MainButton onClick={addHoliday} className="mt-2">הוסף</MainButton>
+                        <ul className="mt-2 text-right space-y-1">
+                            {holidays.map((h, i) => <li key={i}>{`${h.date} — ${h.title}`}</li>)}
+                        </ul>
+                    </Card>
+                </div>
+                <div className="flex-1 min-w-[260px]">
+                    <h3 className="text-xl font-bold mb-2 text-right">ניהול רקע</h3>
+                    <Card>
+                        <div className="flex gap-2 flex-wrap">
+                            <label className="bg-white/80 p-2.5 rounded-xl cursor-pointer border border-black/10 hover:bg-white transition-colors font-semibold">העלה רקע<input type="file" accept="image/*" className="hidden" onChange={handleBgUpload}/></label>
+                            <MainButton onClick={() => setBackground(PRESET_BACKGROUNDS[0])} className="bg-yellow-500 hover:bg-yellow-600">אפס רקע</MainButton>
+                            <MainButton onClick={handleRandomBg} className="bg-green-600 hover:bg-green-700">רקע אקראי</MainButton>
+                        </div>
+                        <hr className="my-3" />
+                        <div className="flex gap-2 flex-wrap">
+                            {PRESET_BACKGROUNDS.slice(1).map((bg, i) => (
+                               <div key={i} onClick={() => setBackground(bg)} className="w-20 h-14 rounded-lg cursor-pointer border-2 border-white/50 bg-cover bg-center shadow-md transition-transform hover:scale-105" style={{backgroundImage: bg.startsWith('linear') ? bg : `url(${bg})` }}></div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+            </div>
+        );
+    };
+    const MapPanel = () => {
+        const [mapQuery, setMapQuery] = useState('Tel Aviv, Israel');
+        const [iframeSrc, setIframeSrc] = useState('https://www.google.com/maps?q=Tel+Aviv,Israel&output=embed');
+        const handleMapSearch = () => {
+            setIframeSrc(`https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`);
+        };
+        return (
+            <Card>
+                <div className="flex justify-center gap-2 mb-2.5">
+                    <Input value={mapQuery} onChange={e => setMapQuery(e.target.value)} placeholder="חפש מיקום במפה..." className="max-w-xl"/>
+                    <MainButton onClick={handleMapSearch}>חפש במפה</MainButton>
+                </div>
+                <div className="w-full h-[520px] rounded-lg overflow-hidden border border-black/10 shadow-inner">
+                    <iframe src={iframeSrc} className="w-full h-full border-0" allowFullScreen loading="lazy"></iframe>
+                </div>
+            </Card>
+        );
+    };
+    const IFrameCard = ({title, siteUrl, iframeId}) => {
+        const refreshIframe = () => {
+            const iframe = document.getElementById(iframeId);
+            if (iframe) iframe.src = iframe.src;
+        };
+        return (
+            <div className="rounded-2xl overflow-hidden shadow-2xl bg-white/70 backdrop-blur-xl border border-white/20">
+                <header className="flex justify-between items-center bg-blue-600 text-white p-2.5 px-3.5">
+                    <h3 className="m-0 text-lg">{title}</h3>
+                    <div className="flex gap-1.5">
+                        <button onClick={refreshIframe} className="bg-white text-blue-600 border-none px-2.5 py-1.5 rounded-lg font-bold cursor-pointer hover:bg-gray-200">רענן</button>
+                        <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-blue-600 border-none px-2.5 py-1.5 rounded-lg font-bold no-underline">פתח</a>
+                    </div>
+                </header>
+                <iframe id={iframeId} src={siteUrl} className="w-full h-[720px] border-0" loading="lazy" referrerPolicy="no-referrer"></iframe>
+            </div>
+        );
+    };
+    const NewsPanel = () => (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(360px,1fr))] gap-4">
+            <IFrameCard title="הגיזרה" siteUrl="https://hagizra.news/" iframeId="news-hagizra" />
+            <IFrameCard title="אמ'ס אונליין" siteUrl="https://www.emess.co.il/online?native" iframeId="news-emess" />
+            <IFrameCard title="Kore M+" siteUrl="https://www.kore.co.il/mplus" iframeId="news-kore" />
+        </div>
+    );
+    const MusicPanel = () => (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(360px,1fr))] gap-4">
+            <IFrameCard title="KCM.fm" siteUrl="https://kcm.fm/" iframeId="music-kcm" />
+            <IFrameCard title="KCM.fm Live" siteUrl="https://kcm.fm/Live/" iframeId="music-kcm-live" />
+            <IFrameCard title="Kol-Play" siteUrl="https://kol-play.co.il/" iframeId="music-kolplay" />
+            <IFrameCard title="HNGN" siteUrl="https://www.hngn.co.il/" iframeId="music-hngn" />
+            <IFrameCard title="Toker.fm" siteUrl="https://www.toker.fm/" iframeId="music-toker" />
+        </div>
+    );
+    const HistoryPanel = () => {
+        const [searchHistory, setSearchHistory] = useLocalStorage('dashboard_search_history_v1', []);
+        const handleSearch = (query) => {
+            window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        };
+        const deleteHistoryItem = (itemToDelete) => {
+            setSearchHistory(prev => prev.filter(item => item !== itemToDelete));
+        };
+        const clearAllHistory = () => {
+            if (window.confirm('האם אתה בטוח שברצונך למחוק את כל היסטוריית החיפושים?')) {
+                setSearchHistory([]);
+            }
+        };
+        return (
+            <div className="max-w-4xl mx-auto">
+                <h3 className="text-2xl font-bold mb-3 text-center">היסטוריית חיפושים</h3>
+                <Card className="text-right p-6">
+                    {searchHistory.length > 0 ? (
+                        <>
+                            <div className="flex justify-end mb-4">
+                                <MainButton onClick={clearAllHistory} className="bg-red-600 hover:bg-red-700">
+                                    נקה את כל ההיסטוריה
+                                </MainButton>
+                            </div>
+                            <ul className="space-y-2 list-none p-0 m-0">
+                                {searchHistory.map((item, index) => (
+                                    <li 
+                                        key={index}
+                                        className="flex justify-between items-center p-3 bg-white/60 rounded-lg shadow-sm flex-wrap gap-2"
+                                    >
+                                        <span className="font-semibold text-gray-800 flex-grow break-all">{item}</span>
+                                        <div className="flex gap-2 flex-shrink-0">
+                                            <button 
+                                                onClick={() => handleSearch(item)}
+                                                className="py-1 px-3 rounded-md border-none bg-blue-500 text-white font-bold text-sm cursor-pointer hover:bg-blue-600 transition-colors"
+                                                title={`חפש שוב: "${item}"`}
+                                            >
+                                                חפש שוב
+                                            </button>
+                                            <button
+                                                onClick={() => deleteHistoryItem(item)}
+                                                className="py-1 px-3 rounded-md border-none bg-red-500 text-white font-bold text-sm cursor-pointer hover:bg-red-600 transition-colors"
+                                                title={`מחק מההיסטוריה: "${item}"`}
+                                            >
+                                                מחק
+                                            </button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    ) : (
+                        <p className="text-center text-gray-500 py-8">היסטוריית החיפושים שלך ריקה.</p>
+                    )}
+                </Card>
+            </div>
+        );
+    };
+
+    // Formerly components/HomePanel.tsx
+    const getDomainFromUrl = (url) => {
+        try {
+            return new URL(url).hostname;
+        } catch (e) {
+            return url;
+        }
+    };
+    const ShortcutGrid = () => {
+        const [shortcuts] = useLocalStorage('dashboard_shortcuts_v3', []);
+        const allShortcuts = [...DEFAULT_SHORTCUTS, ...shortcuts];
+        return (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
+                {allShortcuts.map((s, idx) => (
+                    <Card key={`${s.url}-${idx}`} className="user-shortcut" onClick={() => window.location.href = s.url}>
+                        <img
+                            className="w-14 h-14 object-contain mb-2 rounded-xl bg-white p-1.5 shadow-md mx-auto"
+                            src={`https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(getDomainFromUrl(s.url))}`}
+                            alt={s.title}
+                            onError={(e) => { e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"></svg>'; }}
+                        />
+                        <a href={s.url} onClick={(e) => e.preventDefault()} className="block font-bold text-gray-800 no-underline cursor-pointer break-words">
+                            {s.title}
+                        </a>
+                    </Card>
+                ))}
+            </div>
+        );
+    };
+    const HebrewCalendar = () => {
+        const [viewAnchor, setViewAnchor] = useState(new Date());
+        const [events, setEvents] = useLocalStorage('dashboard_events_v1', []);
+        const [newEventDate, setNewEventDate] = useState(new Date().toISOString().slice(0, 10));
+        const [newEventTime, setNewEventTime] = useState('');
+        const [newEventTitle, setNewEventTitle] = useState('');
+        const hebrewDateUtils = useMemo(() => {
+            let fmtWeekdayHeb, fmtPartsLatn;
+            try {
+                fmtWeekdayHeb = new Intl.DateTimeFormat('he-u-ca-hebrew', { weekday: 'long' });
+                fmtPartsLatn = new Intl.DateTimeFormat('he-u-ca-hebrew-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+            } catch (err) {
+                console.error('Hebrew calendar Intl not supported:', err);
+                return null;
+            }
+            const hebrewYearGematria = (n) => {
+                const y = n % 1000;
+                const hundreds = [[400, 'ת'], [300, 'ש'], [200, 'ר'], [100, 'ק']];
+                const tens = [[90, 'צ'], [80, 'פ'], [70, 'ע'], [60, 'ס'], [50, 'נ'], [40, 'מ'], [30, 'ל'], [20, 'כ'], [10, 'י']];
+                const ones = [[9, 'ט'], [8, 'ח'], [7, 'ז'], [6, 'ו'], [5, 'ה'], [4, 'ד'], [3, 'ג'], [2, 'ב'], [1, 'א']];
+                let rest = y, out = '';
+                for (const [v, c] of hundreds) { while (rest >= v) { out += c; rest -= v; } }
+                for (const [v, c] of tens) { while (rest >= v) { out += c; rest -= v; } }
+                for (const [v, c] of ones) { while (rest >= v) { out += c; rest -= v; } }
+                out = out.replace(/יה$/, 'ט"ו').replace(/יו$/, 'ט"ז');
+                if (out.length >= 2) out = out.slice(0, -1) + '"' + out.slice(-1);
+                return 'ה\'' + out;
+            };
+            const hebrewDayGematria = (num) => {
+                const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט']; const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+                if (num === 15) return 'ט"ו'; if (num === 16) return 'ט"ז';
+                const t = Math.floor(num / 10), o = num % 10; let s = '';
+                if (t > 0) s += tens[t]; if (o > 0) s += ones[o];
+                if (s.length >= 2) s = s.slice(0, -1) + '"' + s.slice(-1);
+                return s || 'א';
+            };
+            const getHebParts = (d) => {
+                const parts = Object.fromEntries(fmtPartsLatn.formatToParts(d).map(p => [p.type, p.value]));
+                return { day: Number(parts.day), monthName: parts.month, year: Number(parts.year), weekday: parts.weekday };
+            };
+            const findHebMonthStart = (base) => {
+                let d = new Date(base.getFullYear(), base.getMonth(), base.getDate()); let guard = 0;
+                while (guard++ < 40) { const p = getHebParts(d); if (p.day === 1) return d; d.setDate(d.getDate() - 1); }
+                return new Date(base.getFullYear(), base.getMonth(), base.getDate());
+            };
+            const buildHebMonthDays = (start) => {
+                const arr = []; let d = new Date(start); const m = getHebParts(start).monthName; let guard = 0;
+                while (guard++ < 40) { arr.push(new Date(d)); d.setDate(d.getDate() + 1); const p = getHebParts(d); if (p.day === 1 && p.monthName !== m) break; }
+                return arr;
+            };
+            const formatFullHebrew = (d) => {
+                const p = getHebParts(d);
+                return `${fmtWeekdayHeb.format(d)}, ${hebrewDayGematria(p.day)} ב${p.monthName}, ${hebrewYearGematria(p.year)}`;
+            };
+            const monthLength = (base) => buildHebMonthDays(findHebMonthStart(base)).length;
+            const shiftHebMonth = (base, delta) => {
+                let d = new Date(base);
+                for (let i = 0; i < Math.abs(delta); i++) {
+                    if (delta > 0) { const start = findHebMonthStart(d); d = new Date(start); d.setDate(start.getDate() + monthLength(d)); } else {
+                        const start = findHebMonthStart(d); const prev = new Date(start); prev.setDate(start.getDate() - 1); d = findHebMonthStart(prev);
+                    }
+                }
+                return d;
+            };
+            const toISO = (d) => d.toISOString().slice(0, 10);
+            return { hebrewYearGematria, hebrewDayGematria, getHebParts, findHebMonthStart, buildHebMonthDays, formatFullHebrew, shiftHebMonth, toISO };
+        }, []);
+        if (!hebrewDateUtils) return <div>הלוח העברי לא נתמך בדפדפן זה.</div>;
+        const { hebrewYearGematria, hebrewDayGematria, getHebParts, findHebMonthStart, buildHebMonthDays, formatFullHebrew, shiftHebMonth, toISO } = hebrewDateUtils;
+        const start = findHebMonthStart(viewAnchor);
+        const days = buildHebMonthDays(start);
+        const ps = getHebParts(start);
+        const headers = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
+        const firstWeekday = start.getDay();
+        const now = new Date();
+        const addEventHandler = () => {
+            if (!newEventDate || !newEventTitle.trim()) { alert('נא למלא תאריך וכותרת'); return; }
+            setEvents(prev => [...prev, { date: newEventDate, title: newEventTitle.trim(), time: newEventTime }]);
+            setNewEventTitle('');
+        };
+        const deleteEventHandler = (date, title) => {
+            setEvents(prev => prev.filter(e => !(e.date === date && e.title === title)));
+        };
+        const clearAllEvents = () => {
+            if (window.confirm('האם למחוק את כל האירועים?')) {
+                setEvents([]);
+            }
+        }
+        const startOfMonth = findHebMonthStart(viewAnchor);
+        const monthDays = buildHebMonthDays(startOfMonth);
+        const monthISO = monthDays.map(d => toISO(d));
+        const currentMonthEvents = events
+          .filter(e => monthISO.includes(e.date))
+          .sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+        return (
+            <Card className="max-w-md mx-auto text-center">
+                <div className="flex items-center justify-center gap-2">
+                    <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, -1))} className="min-w-[36px] h-9 rounded-lg border border-black/10 bg-white/50 cursor-pointer text-xl hover:bg-white/80 transition">‹</button>
+                    <div className="font-bold text-lg">{`${ps.monthName} ${hebrewYearGematria(ps.year)}`}</div>
+                    <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, 1))} className="min-w-[36px] h-9 rounded-lg border border-black/10 bg-white/50 cursor-pointer text-xl hover:bg-white/80 transition">›</button>
+                </div>
+                <div className="mt-2 font-bold" aria-live="polite">{`היום: ${formatFullHebrew(now)}`}</div>
+                <table className="w-full border-collapse mt-2">
+                    <thead>
+                        <tr>{headers.map(h => <th key={h} className="p-2 border border-black/10 bg-black/5 font-bold">{h}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                        {Array.from({ length: Math.ceil((days.length + firstWeekday) / 7) }).map((_, weekIndex) => (
+                            <tr key={weekIndex}>
+                                {Array.from({ length: 7 }).map((_, dayIndex) => {
+                                    const dayOfMonthIndex = weekIndex * 7 + dayIndex - firstWeekday;
+                                    if (dayOfMonthIndex < 0 || dayOfMonthIndex >= days.length) {
+                                        return <td key={dayIndex} className="p-2 border border-black/10"></td>;
+                                    }
+                                    const gd = days[dayOfMonthIndex];
+                                    const p = getHebParts(gd);
+                                    const isToday = toISO(gd) === toISO(now);
+                                    const iso = toISO(gd);
+                                    const dayEvents = events.filter(e => e.date === iso);
+                                    return (
+                                        <td key={dayIndex} className="p-2 border border-black/10 cursor-pointer relative hover:bg-blue-100/50 transition" onClick={() => setNewEventDate(iso)}>
+                                            <span className={isToday ? "inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white shadow-md" : ""}>
+                                                {hebrewDayGematria(p.day)}
+                                            </span>
+                                            {dayEvents.length > 0 && <span className="absolute top-1 right-1 block w-2.5 h-2.5 rounded-full bg-blue-500 border-2 border-white" title={dayEvents.map(e => e.title).join(', ')}></span>}
+                                            <small className="block text-xs text-gray-500 mt-1">{`${gd.getDate()}.${gd.getMonth() + 1}`}</small>
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <div className="mt-4 text-right">
+                    <div className="flex gap-2 flex-wrap items-center">
+                        <Input type="date" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} aria-label="תאריך אירוע" />
+                        <Input type="time" value={newEventTime} onChange={e => setNewEventTime(e.target.value)} aria-label="שעת אירוע" />
+                        <Input type="text" value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} placeholder="כותרת אירוע" className="min-w-[220px] flex-grow" />
+                        <MainButton onClick={addEventHandler}>הוסף</MainButton>
+                        <MainButton onClick={clearAllEvents} className="bg-red-600 hover:bg-red-700">מחק הכל</MainButton>
+                    </div>
+                    <small className="text-gray-500">טיפ: לחץ על יום בלוח למילוי אוטומטי של התאריך.</small>
+                    <div className="mt-3">
+                        <h4 className="font-bold mb-2">אירועים בחודש הנוכחי</h4>
+                        <ul className="list-none p-0 m-0 grid gap-2">
+                            {currentMonthEvents.map((e, i) => (
+                               <li key={i} className="bg-black/5 border border-black/10 rounded-lg p-2.5 flex justify-between items-center text-sm">
+                                   <div>
+                                      <span className="font-bold">{e.title}</span>
+                                      <span className="text-gray-600 mr-2">{new Date(e.date+'T00:00:00').toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}{e.time && ` ${e.time}`}</span>
+                                   </div>
+                                   <button onClick={() => deleteEventHandler(e.date, e.title)} className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600">מחק</button>
+                               </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            </Card>
+        );
+    };
+    const Weather = () => {
+        const [weatherData, setWeatherData] = useLocalStorage('dashboard_weather_data_v1', null);
+        const [lastFetch, setLastFetch] = useLocalStorage('dashboard_weather_fetch_v1', 0);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+        const getWeatherInfo = (code) => {
+            if (code === 0) return { icon: '☀️', description: 'שמיים בהירים' };
+            if (code >= 1 && code <= 3) return { icon: '🌤️', description: 'מעונן חלקית' };
+            if (code === 45 || code === 48) return { icon: '🌫️', description: 'ערפל' };
+            if (code >= 51 && code <= 57) return { icon: '🌧️', description: 'טפטוף' };
+            if (code >= 61 && code <= 67) return { icon: '🌧️', description: 'גשם' };
+            if (code >= 80 && code <= 82) return { icon: '🌦️', description: 'ממטרים' };
+            if (code >= 95 && code <= 99) return { icon: '⛈️', description: 'סופת רעמים' };
+            return { icon: '🌍', description: 'לא ידוע' };
+        };
+        const fetchWeather = useCallback(() => {
+            setLoading(true);
+            setError(null);
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    try {
+                        const { latitude, longitude } = position.coords;
+                        const [geoRes, weatherRes] = await Promise.all([
+                            fetch(`https://geocode.maps.co/reverse?lat=${latitude}&lon=${longitude}`),
+                            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`)
+                        ]);
+                        if (!geoRes.ok) throw new Error('לא ניתן היה לקבל את שם העיר.');
+                        const geoData = await geoRes.json();
+                        const city = geoData.address?.city || geoData.address?.town || geoData.address?.village || 'מיקום נוכחי';
+                        if (!weatherRes.ok) throw new Error('לא ניתן היה לקבל נתוני מזג אוויר.');
+                        const weatherApiData = await weatherRes.json();
+                        const formattedData = {
+                            city,
+                            current: {
+                                temperature: Math.round(weatherApiData.current.temperature_2m),
+                                ...getWeatherInfo(weatherApiData.current.weather_code)
+                            },
+                            forecast: weatherApiData.daily.time.slice(1).map((date, index) => ({
+                                date: new Date(date).toLocaleDateString('he-IL', { weekday: 'short' }),
+                                maxTemp: Math.round(weatherApiData.daily.temperature_2m_max[index + 1]),
+                                minTemp: Math.round(weatherApiData.daily.temperature_2m_min[index + 1]),
+                                ...getWeatherInfo(weatherApiData.daily.weather_code[index + 1])
+                            }))
+                        };
+                        setWeatherData(formattedData);
+                        setLastFetch(Date.now());
+                    } catch (e) {
+                        setError(e.message || 'שגיאה בקבלת נתונים.');
+                        console.error(e);
+                    } finally {
+                        setLoading(false);
+                    }
+                },
+                (err) => {
+                    setError('נדחתה הרשאת מיקום. לא ניתן להציג מזג אוויר.');
+                    setLoading(false);
+                }
+            );
+        }, [setWeatherData, setLastFetch]);
+        useEffect(() => {
+            const now = Date.now();
+            if (!weatherData || (now - lastFetch > 30 * 60 * 1000)) {
+                fetchWeather();
+            } else {
+                setLoading(false);
+            }
+        }, [fetchWeather, weatherData, lastFetch]);
+        if (loading) {
+            return <Card><div className="text-center p-4">טוען נתוני מזג אוויר...</div></Card>;
+        }
+        if (error && !weatherData) {
+            return (
+                <Card>
+                    <div className="text-center p-4 text-red-600">
+                        <p>{error}</p>
+                        <MainButton onClick={fetchWeather} className="mt-2">נסה שוב</MainButton>
+                    </div>
+                </Card>
+            );
+        }
+        if (!weatherData) return null;
+        return (
+            <Card className="text-right max-w-md mx-auto">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="text-xl font-bold">{weatherData.city}</h3>
+                        <p className="text-gray-600">{weatherData.current.description}</p>
+                    </div>
+                    <button onClick={fetchWeather} title="רענן" className="text-gray-400 hover:text-gray-700 transition p-1">
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" /></svg>
+                    </button>
+                </div>
+                <div className="flex items-center justify-center my-4">
+                    <span className="text-7xl">{weatherData.current.icon}</span>
+                    <span className="text-6xl font-bold mr-4">{weatherData.current.temperature}°</span>
+                </div>
+                <div className="flex justify-around text-center mt-4">
+                    {weatherData.forecast.map((day, index) => (
+                        <div key={index} className="flex-1">
+                            <div className="font-bold">{day.date}</div>
+                            <div className="text-3xl my-1">{day.icon}</div>
+                            <div>
+                                <span className="font-semibold">{day.maxTemp}°</span>
+                                <span className="text-gray-500 ml-1">{day.minTemp}°</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                 {error && <div className="text-center p-2 text-yellow-700 bg-yellow-100 rounded-lg mt-3 text-sm">{error}</div>}
+            </Card>
+        );
+    };
+    const HomePanel = () => {
+        const [searchTerm, setSearchTerm] = useState('');
+        const [searchHistory, setSearchHistory] = useLocalStorage('dashboard_search_history_v1', []);
+        const [newShortcutTitle, setNewShortcutTitle] = useState('');
+        const [newShortcutUrl, setNewShortcutUrl] = useState('');
+        const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v3', []);
+        const handleSearch = () => {
+            const q = searchTerm.trim();
+            if (!q) return;
+            if (!searchHistory.includes(q)) {
+                setSearchHistory(prev => [q, ...prev.slice(0, 49)]);
+            }
+            window.location.href = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+        };
+        const handleAddShortcut = () => {
+            const url = newShortcutUrl.trim();
+            if (!url) { alert('הזן URL'); return; }
+            const title = newShortcutTitle.trim() || url;
+            setShortcuts(prev => [...prev, { title, url }]);
+            setNewShortcutTitle('');
+            setNewShortcutUrl('');
+        };
+        const handleExport = () => {
+            if(shortcuts.length === 0) return alert('אין קיצורים לייצוא');
+            const dataStr = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(shortcuts));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "shortcuts.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+        return (
+            <>
+                <div className="flex justify-center gap-2 mb-4">
+                    <div className="flex w-full max-w-3xl">
+                        <Input
+                            type="text"
+                            placeholder="חפש בגוגל..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                            className="rounded-l-xl rounded-r-none"
+                            list="search-suggestions"
+                        />
+                        <datalist id="search-suggestions">
+                            {searchHistory.map(item => <option key={item} value={item} />)}
+                        </datalist>
+                        <MainButton onClick={handleSearch} className="rounded-r-xl rounded-l-none">
+                            <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                            <span>חפש</span>
+                        </MainButton>
+                    </div>
+                </div>
+                <Card className="mb-4">
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                        <Input value={newShortcutTitle} onChange={e => setNewShortcutTitle(e.target.value)} placeholder="שם הקיצור (אופציונלי)" className="w-48"/>
+                        <Input value={newShortcutUrl} onChange={e => setNewShortcutUrl(e.target.value)} placeholder="כתובת אינטרנט (URL)" className="w-72"/>
+                        <MainButton onClick={handleAddShortcut}>הוסף קישור</MainButton>
+                        <MainButton onClick={handleExport} className="bg-teal-600 hover:bg-teal-700">ייצא JSON</MainButton>
+                    </div>
+                </Card>
+                <div className="flex flex-col lg:flex-row gap-4 items-start">
+                    <div className="flex-1 w-full lg:min-w-[260px]">
+                        <ShortcutGrid />
+                    </div>
+                    <div className="flex-1 w-full lg:min-w-[260px] flex flex-col gap-4">
+                        <Weather />
+                        <HebrewCalendar />
+                    </div>
+                </div>
+            </>
+        );
+    };
+
+    // Formerly App.tsx
+    const App = () => {
+        const [activeTab, setActiveTab] = useState(Tab.Home);
+        const [background, setBackground] = useLocalStorage('dashboard_bg_v3', PRESET_BACKGROUNDS[0]);
+        const [font, setFont] = useState("'Assistant', Arial, sans-serif");
+        useEffect(() => {
+            document.body.style.fontFamily = font;
+        }, [font]);
+        useEffect(() => {
+            document.body.classList.remove('animated-bg');
+            if (!background) {
+                document.body.classList.add('animated-bg');
+                return;
+            }
+            if (background.startsWith('linear')) {
+                document.body.style.background = background;
+                document.body.style.backgroundSize = '240% 240%';
+                document.body.style.animation = 'gradient-animation 18s ease infinite';
+            } else {
+                document.body.style.background = `url(${background})`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+                document.body.style.animation = 'none';
+            }
+        }, [background]);
+        return (
+            <div className="flex h-screen w-screen bg-transparent">
+                <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+                <div className="flex-1 flex flex-col p-4 overflow-y-auto h-full">
+                    <PageHeader />
+                    <main className="flex-1">
+                        <Panel id={Tab.Home} activeTab={activeTab}><HomePanel /></Panel>
+                        <Panel id={Tab.Tools} activeTab={activeTab}><ToolsPanel /></Panel>
+                        <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel /></Panel>
+                        <Panel id={Tab.History} activeTab={activeTab}><HistoryPanel /></Panel>
+                        <Panel id={Tab.Design} activeTab={activeTab}><DesignPanel setFont={setFont} setBackground={setBackground} /></Panel>
+                        <Panel id={Tab.Map} activeTab={activeTab}><MapPanel /></Panel>
+                        <Panel id={Tab.News} activeTab={activeTab}><NewsPanel /></Panel>
+                        <Panel id={Tab.Music} activeTab={activeTab}><MusicPanel /></Panel>
+                    </main>
+                    <footer className="text-center mt-3 text-gray-600/80 font-semibold">
+                        דשבורד מקומי — כל הנתונים נשמרים בדפדפן שלך
+                    </footer>
+                </div>
+            </div>
+        );
+    };
+
+    // Formerly index.tsx
+    const rootElement = document.getElementById('root');
+    if (!rootElement) {
+      throw new Error("Could not find root element to mount to");
+    }
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+
+  </script>
 </body>
 </html>
