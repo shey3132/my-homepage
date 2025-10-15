@@ -1011,15 +1011,6 @@
         );
     };
     const DesignPanel = ({ setFont, setBackground, themeName, setThemeName, skin, setSkin, layout, setLayout }) => {
-        const [holidays, setHolidays] = useLocalStorage('dashboard_holidays_v1', []);
-        const [newHolidayDate, setNewHolidayDate] = useState('');
-        const [newHolidayTitle, setNewHolidayTitle] = useState('');
-        const addHoliday = () => {
-            if (!newHolidayDate || !newHolidayTitle.trim()) return alert('בחר תאריך ושם');
-            setHolidays(prev => [...prev, { date: newHolidayDate, title: newHolidayTitle.trim() }]);
-            setNewHolidayDate('');
-            setNewHolidayTitle('');
-        };
         const handleBgUpload = (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
@@ -1116,17 +1107,6 @@
                                <div key={i} onClick={() => setBackground(bg)} className="w-20 h-14 rounded-lg cursor-pointer border-2 border-white/50 bg-cover bg-center shadow-md transition-transform hover:scale-105" style={{backgroundImage: bg.startsWith('linear') ? bg : `url(${bg})` }}></div>
                             ))}
                         </div>
-                    </Card>
-                    <h3 className="text-xl font-bold mt-3 mb-2 text-right">תאריכים חשובים</h3>
-                    <Card className="text-right">
-                        <div className="flex gap-2">
-                            <Input type="date" value={newHolidayDate} onChange={e => setNewHolidayDate(e.target.value)} />
-                            <Input placeholder="שם האירוע" value={newHolidayTitle} onChange={e => setNewHolidayTitle(e.target.value)} />
-                        </div>
-                        <MainButton onClick={addHoliday} className="mt-2">הוסף</MainButton>
-                        <ul className="mt-2 text-right space-y-1">
-                            {holidays.map((h, i) => <li key={i}>{`${h.date} — ${h.title}`}</li>)}
-                        </ul>
                     </Card>
                 </div>
             </div>
@@ -1258,7 +1238,7 @@
           <Card className="text-right">
             <h3 className="text-xl font-bold mb-2">תכונות עיקריות</h3>
             <ul className="list-disc pr-5 space-y-2" style={{color: 'var(--text-secondary)'}}>
-              <li><b>דף הבית:</b> המקום המרכזי שלכם. כאן תוכלו לחפש בגוגל, להוסיף קיצורי דרך, לנהל אירועים בלוח השנה העברי ולסדר את הוידג'טים (לוח שנה וקישורים) על ידי גרירה ושחרור.</li>
+              <li><b>דף הבית:</b> המקום המרכזי שלכם. כאן תוכלו לחפש בגוגל, להוסיף קיצורי דרך, ולנהל את הקישורים שלכם.</li>
               <li><b>כלים:</b> גישה מהירה למחשבון, סטופר/טיימר ומתרגם של גוגל.</li>
               <li><b>אישי:</b> המרחב הפרטי שלכם. רשמו פתקים, נהלו רשימת משימות, וארגנו את הקישורים והקבוצות שלכם.</li>
               <li><b>היסטוריה:</b> צפו ומחקו את היסטוריית החיפושים שלכם בגוגל שבוצעו דרך הדשבורד.</li>
@@ -1362,166 +1342,6 @@
             </div>
         );
     };
-    const HebrewCalendar = () => {
-        const [viewAnchor, setViewAnchor] = useState(new Date());
-        const [events, setEvents] = useLocalStorage('dashboard_events_v1', []);
-        const [newEventDate, setNewEventDate] = useState(new Date().toISOString().slice(0, 10));
-        const [newEventTime, setNewEventTime] = useState('');
-        const [newEventTitle, setNewEventTitle] = useState('');
-        const hebrewDateUtils = useMemo(() => {
-            let fmtWeekdayHeb, fmtPartsLatn;
-            try {
-                fmtWeekdayHeb = new Intl.DateTimeFormat('he-u-ca-hebrew', { weekday: 'long' });
-                fmtPartsLatn = new Intl.DateTimeFormat('he-u-ca-hebrew-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
-            } catch (err) {
-                console.error('Hebrew calendar Intl not supported:', err);
-                return null;
-            }
-            const hebrewYearGematria = (n) => {
-                const y = n % 1000;
-                const hundreds = [[400, 'ת'], [300, 'ש'], [200, 'ר'], [100, 'ק']];
-                const tens = [[90, 'צ'], [80, 'פ'], [70, 'ע'], [60, 'ס'], [50, 'נ'], [40, 'מ'], [30, 'ל'], [20, 'כ'], [10, 'י']];
-                const ones = [[9, 'ט'], [8, 'ח'], [7, 'ז'], [6, 'ו'], [5, 'ה'], [4, 'ד'], [3, 'ג'], [2, 'ב'], [1, 'א']];
-                let rest = y, out = '';
-                for (const [v, c] of hundreds) { while (rest >= v) { out += c; rest -= v; } }
-                for (const [v, c] of tens) { while (rest >= v) { out += c; rest -= v; } }
-                for (const [v, c] of ones) { while (rest >= v) { out += c; rest -= v; } }
-                out = out.replace(/יה$/, 'ט"ו').replace(/יו$/, 'ט"ז');
-                if (out.length >= 2) out = out.slice(0, -1) + '"' + out.slice(-1);
-                return 'ה\'' + out;
-            };
-            const hebrewDayGematria = (num) => {
-                const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט']; const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
-                if (num === 15) return 'ט"ו'; if (num === 16) return 'ט"ז';
-                const t = Math.floor(num / 10), o = num % 10; let s = '';
-                if (t > 0) s += tens[t]; if (o > 0) s += ones[o];
-                if (s.length >= 2) s = s.slice(0, -1) + '"' + s.slice(-1);
-                return s || 'א';
-            };
-            const getHebParts = (d) => {
-                const parts = Object.fromEntries(fmtPartsLatn.formatToParts(d).map(p => [p.type, p.value]));
-                return { day: Number(parts.day), monthName: parts.month, year: Number(parts.year), weekday: parts.weekday };
-            };
-            const findHebMonthStart = (base) => {
-                let d = new Date(base.getFullYear(), base.getMonth(), base.getDate()); let guard = 0;
-                while (guard++ < 40) { const p = getHebParts(d); if (p.day === 1) return d; d.setDate(d.getDate() - 1); }
-                return new Date(base.getFullYear(), base.getMonth(), base.getDate());
-            };
-            const buildHebMonthDays = (start) => {
-                const arr = []; let d = new Date(start); const m = getHebParts(start).monthName; let guard = 0;
-                while (guard++ < 40) { arr.push(new Date(d)); d.setDate(d.getDate() + 1); const p = getHebParts(d); if (p.day === 1 && p.monthName !== m) break; }
-                return arr;
-            };
-            const formatFullHebrew = (d) => {
-                const p = getHebParts(d);
-                return `${fmtWeekdayHeb.format(d)}, ${hebrewDayGematria(p.day)} ב${p.monthName}, ${hebrewYearGematria(p.year)}`;
-            };
-            const monthLength = (base) => buildHebMonthDays(findHebMonthStart(base)).length;
-            const shiftHebMonth = (base, delta) => {
-                let d = new Date(base);
-                for (let i = 0; i < Math.abs(delta); i++) {
-                    if (delta > 0) { const start = findHebMonthStart(d); d = new Date(start); d.setDate(start.getDate() + monthLength(d)); } else {
-                        const start = findHebMonthStart(d); const prev = new Date(start); prev.setDate(start.getDate() - 1); d = findHebMonthStart(prev);
-                    }
-                }
-                return d;
-            };
-            const toISO = (d) => d.toISOString().slice(0, 10);
-            return { hebrewYearGematria, hebrewDayGematria, getHebParts, findHebMonthStart, buildHebMonthDays, formatFullHebrew, shiftHebMonth, toISO };
-        }, []);
-        if (!hebrewDateUtils) return <div>הלוח העברי לא נתמך בדפדפן זה.</div>;
-        const { hebrewYearGematria, hebrewDayGematria, getHebParts, findHebMonthStart, buildHebMonthDays, formatFullHebrew, shiftHebMonth, toISO } = hebrewDateUtils;
-        const start = findHebMonthStart(viewAnchor);
-        const days = buildHebMonthDays(start);
-        const ps = getHebParts(start);
-        const headers = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
-        const firstWeekday = start.getDay();
-        const now = new Date();
-        const addEventHandler = () => {
-            if (!newEventDate || !newEventTitle.trim()) { alert('נא למלא תאריך וכותרת'); return; }
-            setEvents(prev => [...prev, { date: newEventDate, title: newEventTitle.trim(), time: newEventTime }]);
-            setNewEventTitle('');
-        };
-        const deleteEventHandler = (date, title) => {
-            setEvents(prev => prev.filter(e => !(e.date === date && e.title === title)));
-        };
-        const clearAllEvents = () => {
-            if (window.confirm('האם למחוק את כל האירועים?')) {
-                setEvents([]);
-            }
-        }
-        const startOfMonth = findHebMonthStart(viewAnchor);
-        const monthDays = buildHebMonthDays(startOfMonth);
-        const monthISO = monthDays.map(d => toISO(d));
-        const currentMonthEvents = events
-          .filter(e => monthISO.includes(e.date))
-          .sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
-        return (
-            <Card className="text-center">
-                <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, -1))} className="min-w-[36px] h-9 rounded-lg border cursor-pointer text-xl hover:opacity-80 transition" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)'}}>‹</button>
-                    <div className="font-bold text-lg">{`${ps.monthName} ${hebrewYearGematria(ps.year)}`}</div>
-                    <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, 1))} className="min-w-[36px] h-9 rounded-lg border cursor-pointer text-xl hover:opacity-80 transition" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)'}}>›</button>
-                </div>
-                <div className="mt-2 font-bold" aria-live="polite">{`היום: ${formatFullHebrew(now)}`}</div>
-                <table className="w-full border-collapse mt-2">
-                    <thead>
-                        <tr>{headers.map(h => <th key={h} className="p-2 border font-bold" style={{borderColor: 'var(--border-color)', backgroundColor: 'rgba(0,0,0,0.05)'}}>{h}</th>)}</tr>
-                    </thead>
-                    <tbody>
-                        {Array.from({ length: Math.ceil((days.length + firstWeekday) / 7) }).map((_, weekIndex) => (
-                            <tr key={weekIndex}>
-                                {Array.from({ length: 7 }).map((_, dayIndex) => {
-                                    const dayOfMonthIndex = weekIndex * 7 + dayIndex - firstWeekday;
-                                    if (dayOfMonthIndex < 0 || dayOfMonthIndex >= days.length) {
-                                        return <td key={dayIndex} className="p-2 border" style={{borderColor: 'var(--border-color)'}}></td>;
-                                    }
-                                    const gd = days[dayOfMonthIndex];
-                                    const p = getHebParts(gd);
-                                    const isToday = toISO(gd) === toISO(now);
-                                    const iso = toISO(gd);
-                                    const dayEvents = events.filter(e => e.date === iso);
-                                    return (
-                                        <td key={dayIndex} className="p-2 border cursor-pointer relative hover:bg-[rgba(0,0,0,0.05)] transition" style={{borderColor: 'var(--border-color)'}} onClick={() => setNewEventDate(iso)}>
-                                            <span style={isToday ? {backgroundColor: 'var(--accent-primary)', color: 'var(--text-on-accent)'} : {}} className={isToday ? "inline-flex items-center justify-center w-9 h-9 rounded-full shadow-md" : ""}>
-                                                {hebrewDayGematria(p.day)}
-                                            </span>
-                                            {dayEvents.length > 0 && <span className="absolute top-1 right-1 block w-2.5 h-2.5 rounded-full border-2 border-white" style={{backgroundColor: 'var(--accent-primary)'}} title={dayEvents.map(e => e.title).join(', ')}></span>}
-                                            <small className="block text-xs mt-1" style={{color: 'var(--text-secondary)'}}>{`${gd.getDate()}.${gd.getMonth() + 1}`}</small>
-                                        </td>
-                                    );
-                                })}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <div className="mt-4 text-right">
-                    <div className="flex gap-2 flex-wrap items-center">
-                        <Input type="date" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} aria-label="תאריך אירוע" />
-                        <Input type="time" value={newEventTime} onChange={e => setNewEventTime(e.target.value)} aria-label="שעת אירוע" />
-                        <Input type="text" value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} placeholder="כותרת אירוע" className="min-w-[220px] flex-grow" />
-                        <MainButton onClick={addEventHandler}>הוסף</MainButton>
-                        <MainButton onClick={clearAllEvents} className="bg-red-600 hover:bg-red-700 text-white">מחק הכל</MainButton>
-                    </div>
-                    <small style={{color: 'var(--text-secondary)'}}>טיפ: לחץ על יום בלוח למילוי אוטומטי של התאריך.</small>
-                    <div className="mt-3">
-                        <h4 className="font-bold mb-2">אירועים בחודש הנוכחי</h4>
-                        <ul className="list-none p-0 m-0 grid gap-2">
-                            {currentMonthEvents.map((e, i) => (
-                               <li key={i} className="border rounded-lg p-2.5 flex justify-between items-center text-sm" style={{backgroundColor: 'rgba(0,0,0,0.05)', borderColor: 'var(--border-color)'}}>
-                                   <div>
-                                      <span className="font-bold">{e.title}</span>
-                                      <span className="mr-2" style={{color: 'var(--text-secondary)'}}>{new Date(e.date+'T00:00:00').toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}{e.time && ` ${e.time}`}</span>
-                                   </div>
-                                   <button onClick={() => deleteEventHandler(e.date, e.title)} className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600">מחק</button>
-                               </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            </Card>
-        );
-    };
     const HomePanel = ({ setActiveTab }) => {
         const [searchTerm, setSearchTerm] = useState('');
         const [searchHistory, setSearchHistory] = useLocalStorage('dashboard_search_history_v1', []);
@@ -1530,10 +1350,6 @@
         const [newShortcutGroup, setNewShortcutGroup] = useState('');
         const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
         const [shortcutGroups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
-        const [widgetOrder, setWidgetOrder] = useLocalStorage('dashboard_widget_order_v2', ['shortcuts', 'calendar']);
-        
-        const draggedItem = useRef(null);
-        const draggedOverItem = useRef(null);
 
         const handleSearch = () => {
             const q = searchTerm.trim();
@@ -1561,37 +1377,7 @@
             setNewShortcutTitle('');
             setNewShortcutUrl('');
         };
-        const handleExport = () => {
-            if(shortcuts.length === 0) return alert('אין קיצורים לייצוא');
-            const dataStr = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(shortcuts));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "shortcuts.json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-        };
-
-        const handleDragSort = () => {
-            const _widgetOrder = [...widgetOrder];
-            const draggedItemContent = _widgetOrder.splice(draggedItem.current, 1)[0];
-            _widgetOrder.splice(draggedOverItem.current, 0, draggedItemContent);
-            draggedItem.current = null;
-            draggedOverItem.current = null;
-            setWidgetOrder(_widgetOrder);
-        };
         
-        const widgets = {
-            shortcuts: {
-                component: <ShortcutGrid />,
-                className: "w-full lg:flex-grow-[2] lg:w-2/3"
-            },
-            calendar: {
-                component: <HebrewCalendar />,
-                className: "w-full lg:flex-grow-[1] lg:w-1/3"
-            },
-        };
-
         return (
             <>
                 <div className="flex justify-center gap-2 mb-4">
@@ -1631,20 +1417,8 @@
                         <MainButton onClick={() => setActiveTab(Tab.Personal)} className="bg-gray-600 hover:bg-gray-700 text-white">נהל קבוצות</MainButton>
                     </div>
                 </Card>
-                <div className="flex flex-col lg:flex-row gap-4 items-start">
-                     {widgetOrder.map((widgetKey, index) => (
-                        <div
-                            key={widgetKey}
-                            className={`${widgets[widgetKey].className} transition-transform duration-300`}
-                            draggable
-                            onDragStart={() => (draggedItem.current = index)}
-                            onDragEnter={() => (draggedOverItem.current = index)}
-                            onDragEnd={handleDragSort}
-                            onDragOver={e => e.preventDefault()}
-                        >
-                            {widgets[widgetKey].component}
-                        </div>
-                    ))}
+                <div className="w-full">
+                    <ShortcutGrid />
                 </div>
             </>
         );
