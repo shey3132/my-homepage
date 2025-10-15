@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>דף הבית שלי</title>
+  <title>דף הבית</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Added Babel for in-browser JSX transpilation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,9 +13,27 @@
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      /* Default to light theme */
+      --bg-main: linear-gradient(300deg, #a8e0ff, #c6d9ff, #e3d3ff);
+      --bg-sidebar: rgba(255, 255, 255, 0.2);
+      --bg-card: rgba(255, 255, 255, 0.5);
+      --bg-input: rgba(255, 255, 255, 0.7);
+      --text-primary: #1f2937;
+      --text-secondary: #4b5563;
+      --text-on-accent: #ffffff;
+      --accent-primary: #2563eb;
+      --accent-primary-hover: #1d4ed8;
+      --border-color: rgba(0, 0, 0, 0.1);
+      --shadow-color-rgb: 0, 0, 0;
+    }
+
     body {
       font-family: 'Assistant', Arial, sans-serif;
       overflow: hidden; /* Prevent body scroll, handle scrolling in main content */
+      background: var(--bg-main);
+      color: var(--text-primary);
+      transition: color 0.3s, background 0.3s;
     }
     .animated-bg {
       background: linear-gradient(300deg, #a8e0ff, #c6d9ff, #e3d3ff);
@@ -55,7 +73,7 @@
 }
 </script>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="text-gray-800">
   <div id="root"></div>
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -101,6 +119,72 @@
       'https://images.unsplash.com/photo-1536514498073-50e69d39c6cf?q=80&w=1920&auto=format&fit=crop', // Aurora Borealis
       'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=1920&auto=format&fit=crop', // Forest Lake
     ];
+    const THEMES = {
+      light: {
+        name: 'בהיר',
+        colors: {
+          '--bg-main': 'linear-gradient(300deg, #a8e0ff, #c6d9ff, #e3d3ff)',
+          '--bg-sidebar': 'rgba(255, 255, 255, 0.2)',
+          '--bg-card': 'rgba(255, 255, 255, 0.5)',
+          '--bg-input': 'rgba(255, 255, 255, 0.7)',
+          '--text-primary': '#1f2937',
+          '--text-secondary': '#4b5563',
+          '--text-on-accent': '#ffffff',
+          '--accent-primary': '#2563eb',
+          '--accent-primary-hover': '#1d4ed8',
+          '--border-color': 'rgba(0, 0, 0, 0.1)',
+          '--shadow-color-rgb': '0, 0, 0',
+        }
+      },
+      dark: {
+        name: 'כהה',
+        colors: {
+          '--bg-main': '#111827',
+          '--bg-sidebar': 'rgba(0, 0, 0, 0.2)',
+          '--bg-card': 'rgba(31, 41, 55, 0.7)',
+          '--bg-input': 'rgba(55, 65, 81, 0.8)',
+          '--text-primary': '#d1d5db',
+          '--text-secondary': '#9ca3af',
+          '--text-on-accent': '#ffffff',
+          '--accent-primary': '#14b8a6',
+          '--accent-primary-hover': '#0d9488',
+          '--border-color': 'rgba(255, 255, 255, 0.15)',
+          '--shadow-color-rgb': '0, 0, 0',
+        }
+      },
+      ocean: {
+        name: 'אוקיינוס',
+        colors: {
+          '--bg-main': 'linear-gradient(to top, #00c6fb 0%, #005bea 100%)',
+          '--bg-sidebar': 'rgba(0, 50, 100, 0.2)',
+          '--bg-card': 'rgba(255, 255, 255, 0.6)',
+          '--bg-input': 'rgba(255, 255, 255, 0.8)',
+          '--text-primary': '#0b2d48',
+          '--text-secondary': '#1e6091',
+          '--text-on-accent': '#ffffff',
+          '--accent-primary': '#0096c7',
+          '--accent-primary-hover': '#0077b6',
+          '--border-color': 'rgba(255, 255, 255, 0.2)',
+          '--shadow-color-rgb': '0, 0, 0',
+        }
+      },
+      sunset: {
+          name: 'שקיעה',
+          colors: {
+              '--bg-main': 'linear-gradient(to right, #ff7e5f, #feb47b)',
+              '--bg-sidebar': 'rgba(0, 0, 0, 0.1)',
+              '--bg-card': 'rgba(255, 255, 255, 0.5)',
+              '--bg-input': 'rgba(255, 255, 255, 0.7)',
+              '--text-primary': '#4A0404',
+              '--text-secondary': '#7A3E3E',
+              '--text-on-accent': '#ffffff',
+              '--accent-primary': '#D62828',
+              '--accent-primary-hover': '#A82020',
+              '--border-color': 'rgba(0, 0, 0, 0.1)',
+              '--shadow-color-rgb': '0, 0, 0',
+          }
+      }
+    };
 
     // Formerly hooks/useLocalStorage.ts
     function useLocalStorage(key, initialValue) {
@@ -176,10 +260,10 @@
         if (!dailyQuote) return null;
         return (
             <div className="hidden lg:block max-w-sm pl-4">
-                <blockquote className="text-gray-700 italic text-right">
+                <blockquote className="italic text-right" style={{color: 'var(--text-primary)'}}>
                     <p>"{dailyQuote.quote}"</p>
                 </blockquote>
-                <cite className="block text-gray-500 text-sm mt-1 text-right">— {dailyQuote.author}</cite>
+                <cite className="block mt-1 text-right text-sm" style={{color: 'var(--text-secondary)'}}>— {dailyQuote.author}</cite>
             </div>
         );
     };
@@ -205,18 +289,29 @@
             { id: Tab.Music, label: 'מוזיקה' },
         ];
         return (
-            <aside className="w-64 bg-black/10 backdrop-blur-lg p-4 flex flex-col gap-2 shrink-0 h-full">
-                <h1 className="text-2xl font-bold text-center text-gray-800 mb-4 font-[Varela Round]">הדשבורד שלי</h1>
+            <aside 
+              className="w-64 backdrop-blur-lg p-4 flex flex-col gap-2 shrink-0 h-full"
+              style={{backgroundColor: 'var(--bg-sidebar)'}}
+            >
+                <h1 
+                  className="text-2xl font-bold text-center mb-4 font-[Varela Round]"
+                  style={{color: 'var(--text-primary)'}}
+                >הדשבורד שלי</h1>
                 <nav className="flex flex-col gap-2">
                     {tabs.map(tab => {
                         const Icon = icons[tab.id];
+                        const isActive = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-4 py-3 px-4 rounded-xl text-right font-bold transition-all duration-200 ease-in-out transform hover:scale-105 ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-700 hover:bg-white/50'}`}
+                                className={`flex items-center gap-4 py-3 px-4 rounded-xl text-right font-bold transition-all duration-200 ease-in-out transform hover:scale-105 ${isActive ? 'shadow-lg' : 'hover:bg-[rgba(255,255,255,0.2)]'}`}
                                 role="tab"
-                                aria-selected={activeTab === tab.id}
+                                aria-selected={isActive}
+                                style={{
+                                    backgroundColor: isActive ? 'var(--accent-primary)' : 'transparent',
+                                    color: isActive ? 'var(--text-on-accent)' : 'var(--text-primary)',
+                                }}
                             >
                                 <Icon className="w-6 h-6" />
                                 <span>{tab.label}</span>
@@ -243,10 +338,13 @@
         const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         return (
             <header className="mb-4" role="banner">
-                <div className="bg-white/60 backdrop-blur-md p-4 px-6 rounded-2xl shadow-lg border border-white/30 flex justify-between items-center">
+                <div 
+                    className="backdrop-blur-md p-4 px-6 rounded-2xl shadow-lg border flex justify-between items-center"
+                    style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)'}}
+                >
                      <div className="text-right">
-                        <h2 className="font-bold text-2xl mb-1.5">{getGreeting()}</h2>
-                        <p className="text-md text-gray-600">
+                        <h2 className="font-bold text-2xl mb-1.5" style={{color: 'var(--text-primary)'}}>{getGreeting()}</h2>
+                        <p className="text-md" style={{color: 'var(--text-secondary)'}}>
                             {`📅 ${dateTime.toLocaleDateString('he-IL', dateOptions)} | ⏰ ${dateTime.toLocaleTimeString('he-IL')}`}
                         </p>
                     </div>
@@ -266,17 +364,32 @@
         );
     };
     const Card = ({ children, className = '', onClick }) => {
-        const baseClasses = "bg-white/50 backdrop-blur-xl rounded-2xl p-4 text-center shadow-lg border border-white/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-1";
+        const baseClasses = "backdrop-blur-xl rounded-2xl p-4 text-center shadow-lg border transition-all duration-300 hover:shadow-xl hover:-translate-y-1";
         const clickableClasses = onClick ? "cursor-pointer" : "";
         return (
-            <div className={`${baseClasses} ${clickableClasses} ${className}`} onClick={onClick}>
+            <div 
+              className={`${baseClasses} ${clickableClasses} ${className}`} 
+              onClick={onClick}
+              style={{
+                backgroundColor: 'var(--bg-card)', 
+                borderColor: 'var(--border-color)', 
+                boxShadow: `0 10px 15px -3px rgba(var(--shadow-color-rgb), 0.1), 0 4px 6px -4px rgba(var(--shadow-color-rgb), 0.1)`
+              }}
+            >
                 {children}
             </div>
         );
     };
-    const MainButton = ({ children, className, ...props }) => (
+    const MainButton = ({ children, className, style, ...props }) => (
         <button
-            className={`py-2.5 px-5 rounded-xl border-none bg-blue-600 text-white font-bold cursor-pointer hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:shadow-none flex items-center justify-center gap-2 ${className}`}
+            className={`py-2.5 px-5 rounded-xl border-none font-bold cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:shadow-none flex items-center justify-center gap-2 ${className}`}
+            style={{
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--text-on-accent)',
+              ...style
+            }}
+            onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--accent-primary-hover)'}
+            onMouseOut={e => e.currentTarget.style.backgroundColor = 'var(--accent-primary)'}
             {...props}
         >
             {children}
@@ -284,7 +397,12 @@
     );
     const Input = ({ className, ...props }) => (
         <input
-            className={`w-full p-2.5 rounded-xl border border-black/10 bg-white/70 text-base placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow shadow-sm focus:shadow-md ${className}`}
+            className={`w-full p-2.5 rounded-xl border text-base outline-none transition-shadow shadow-sm focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)] ${className}`}
+            style={{
+              backgroundColor: 'var(--bg-input)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)'
+            }}
             {...props}
         />
     );
@@ -316,13 +434,13 @@
                     <Input value={expression} onChange={e => setExpression(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && calculate()} placeholder="הקלד ביטוי (למשל 12+5*3)" />
                     <div className="flex gap-2 mt-2">
                         <MainButton onClick={calculate}>חשב</MainButton>
-                        <MainButton onClick={() => { setExpression(''); setResult(''); }} className="bg-gray-600 hover:bg-gray-700">נקה</MainButton>
+                        <MainButton onClick={() => { setExpression(''); setResult(''); }} style={{backgroundColor: '#6b7280', color: 'white'}} onMouseOver={e => e.currentTarget.style.backgroundColor = '#4b5563'} onMouseOut={e => e.currentTarget.style.backgroundColor = '#6b7280'}>נקה</MainButton>
                     </div>
-                    <div className="text-gray-600 mt-2 text-right min-h-[1.5rem]">{result}</div>
+                    <div className="mt-2 text-right min-h-[1.5rem]" style={{color: 'var(--text-secondary)'}}>{result}</div>
                     {history.length > 0 && (
                         <div className="mt-4 text-right">
                             <div className="flex justify-between items-center mb-1">
-                                <h4 className="text-sm font-bold text-gray-700">היסטוריה</h4>
+                                <h4 className="text-sm font-bold" style={{color: 'var(--text-primary)'}}>היסטוריה</h4>
                                 <button
                                     onClick={() => {
                                         if (window.confirm('האם לנקות את היסטוריית החישובים?')) {
@@ -334,13 +452,13 @@
                                     נקה היסטוריה
                                 </button>
                             </div>
-                            <ul className="max-h-32 overflow-y-auto border border-black/10 rounded-lg p-2 bg-gray-50/50 space-y-1 text-sm text-gray-700">
+                            <ul className="max-h-32 overflow-y-auto border rounded-lg p-2 bg-[rgba(0,0,0,0.02)] space-y-1 text-sm" style={{borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}>
                                 {history.map((item, index) => (
                                     <li
                                         key={index}
                                         onClick={() => setExpression(item.split(' = ')[0])}
                                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setExpression(item.split(' = ')[0])}}
-                                        className="cursor-pointer hover:bg-gray-200 p-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        className="cursor-pointer hover:bg-[rgba(0,0,0,0.05)] p-1 rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
                                         title="לחץ כדי להשתמש שוב בביטוי זה"
                                         role="button"
                                         tabIndex={0}
@@ -405,10 +523,10 @@
                     <div className="font-bold text-3xl text-center font-mono tracking-wider">{formatHMS(elapsed)}</div>
                     <div className="flex gap-2 flex-wrap mt-2 justify-center">
                         <MainButton onClick={handleStart}>התחל</MainButton>
-                        <MainButton onClick={handlePause} className="bg-yellow-500 hover:bg-yellow-600">השהה</MainButton>
-                        <MainButton onClick={handleReset} className="bg-red-600 hover:bg-red-700">אפס</MainButton>
+                        <MainButton onClick={handlePause} className="bg-yellow-500 hover:bg-yellow-600 text-white">השהה</MainButton>
+                        <MainButton onClick={handleReset} className="bg-red-600 hover:bg-red-700 text-white">אפס</MainButton>
                         <Input type="number" min="0" value={minutes} onChange={e => setMinutes(e.target.value)} placeholder="דקות (טיימר)" className="w-32"/>
-                        <MainButton onClick={handleStartCountdown} className="bg-teal-600 hover:bg-teal-700">התחל טיימר</MainButton>
+                        <MainButton onClick={handleStartCountdown} className="bg-teal-600 hover:bg-teal-700 text-white">התחל טיימר</MainButton>
                     </div>
                 </Card>
             </>
@@ -431,9 +549,9 @@
                 <div className="flex-1 min-w-[260px]">
                     <h3 className="text-xl font-bold mb-2 text-right">תרגום מהיר</h3>
                     <Card>
-                        <textarea value={textToTranslate} onChange={e => setTextToTranslate(e.target.value)} rows={4} placeholder="הכנס טקסט לתרגום..." className="w-full p-2.5 rounded-xl border border-black/10 bg-white/70 text-base placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow shadow-sm focus:shadow-md"></textarea>
+                        <textarea value={textToTranslate} onChange={e => setTextToTranslate(e.target.value)} rows={4} placeholder="הכנס טקסט לתרגום..." className="w-full p-2.5 rounded-xl border text-base outline-none transition-shadow shadow-sm focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)]" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}></textarea>
                         <div className="flex gap-2 mt-2">
-                            <select value={lang} onChange={e => setLang(e.target.value)} className="p-2.5 rounded-xl border border-black/10 bg-white/70 text-base">
+                            <select value={lang} onChange={e => setLang(e.target.value)} className="p-2.5 rounded-xl border text-base" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}>
                                 <option value="he">עברית</option>
                                 <option value="en">אנגלית</option>
                                 <option value="es">ספרדית</option>
@@ -454,10 +572,10 @@
             <>
                 <h3 className="text-xl font-bold mb-2 text-right">פתקים אישיים</h3>
                 <Card className="text-right">
-                    <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} rows={8} placeholder="הערות — נשמרות בדפדפן" className="w-full p-2.5 rounded-xl border border-black/10 bg-white/70 text-base placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow shadow-sm focus:shadow-md"></textarea>
+                    <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} rows={8} placeholder="הערות — נשמרות בדפדפן" className="w-full p-2.5 rounded-xl border text-base outline-none transition-shadow shadow-sm focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)]" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}></textarea>
                     <div className="flex gap-2 mt-2">
                         <MainButton onClick={() => { setNotes(tempNotes); alert('פתק נשמר'); }}>שמור</MainButton>
-                        <MainButton onClick={() => { if(window.confirm('למחוק?')) setTempNotes(''); }} className="bg-gray-500 hover:bg-gray-600">נקה</MainButton>
+                        <MainButton onClick={() => { if(window.confirm('למחוק?')) setTempNotes(''); }} className="bg-gray-500 hover:bg-gray-600 text-white">נקה</MainButton>
                     </div>
                 </Card>
             </>
@@ -487,17 +605,17 @@
                     </div>
                     <ul className="list-none p-0 m-0 max-h-60 overflow-y-auto">
                         {todos.map((todo, i) => (
-                            <li key={i} className="flex gap-3 items-center p-2.5 border-b border-dashed border-black/10">
-                                <input type="checkbox" checked={todo.done} onChange={() => toggleTodo(i)} className="w-5 h-5 accent-blue-600 cursor-pointer" />
-                                <span className={`flex-grow ${todo.done ? 'line-through text-gray-400' : ''}`}>{todo.txt}</span>
+                            <li key={i} className="flex gap-3 items-center p-2.5 border-b border-dashed" style={{borderColor: 'var(--border-color)'}}>
+                                <input type="checkbox" checked={todo.done} onChange={() => toggleTodo(i)} className="w-5 h-5 accent-[var(--accent-primary)] cursor-pointer" />
+                                <span className={`flex-grow ${todo.done ? 'line-through text-[var(--text-secondary)]' : ''}`}>{todo.txt}</span>
                                 <button onClick={() => deleteTodo(i)} className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors">✖</button>
                             </li>
                         ))}
                     </ul>
                     {todos.length > 0 && (
-                        <div className="flex gap-2 mt-3 pt-3 border-t border-black/10">
-                            <MainButton onClick={() => setTodos(p => p.filter(t => !t.done))} className="bg-gray-600 hover:bg-gray-700 text-sm">נקה מסומנות</MainButton>
-                            <MainButton onClick={() => { if(window.confirm('למחוק הכל?')) setTodos([]); }} className="bg-red-600 hover:bg-red-700 text-sm">נקה הכל</MainButton>
+                        <div className="flex gap-2 mt-3 pt-3 border-t" style={{borderColor: 'var(--border-color)'}}>
+                            <MainButton onClick={() => setTodos(p => p.filter(t => !t.done))} className="bg-gray-600 hover:bg-gray-700 text-white text-sm">נקה מסומנות</MainButton>
+                            <MainButton onClick={() => { if(window.confirm('למחוק הכל?')) setTodos([]); }} className="bg-red-600 hover:bg-red-700 text-white text-sm">נקה הכל</MainButton>
                         </div>
                     )}
                 </Card>
@@ -515,8 +633,8 @@
                 <Card className="text-right">
                     <div className="space-y-2 max-h-96 overflow-y-auto">
                         {shortcuts.map((s, i) => (
-                            <div key={i} className="flex justify-between items-center p-2 bg-white/50 rounded-lg">
-                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{s.title}</a>
+                            <div key={i} className="flex justify-between items-center p-2 rounded-lg" style={{backgroundColor: 'var(--bg-input)'}}>
+                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{color: 'var(--accent-primary)'}}>{s.title}</a>
                                 <button onClick={() => deleteShortcut(i)} className="bg-red-500 text-white rounded px-2 py-1 text-sm hover:bg-red-600 transition-colors">מחק</button>
                             </div>
                         ))}
@@ -536,7 +654,7 @@
             </div>
         </div>
     );
-    const DesignPanel = ({ setFont, setBackground }) => {
+    const DesignPanel = ({ setFont, setBackground, themeName, setThemeName }) => {
         const [holidays, setHolidays] = useLocalStorage('dashboard_holidays_v1', []);
         const [newHolidayDate, setNewHolidayDate] = useState('');
         const [newHolidayTitle, setNewHolidayTitle] = useState('');
@@ -564,9 +682,30 @@
         return (
             <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1 min-w-[260px]">
-                    <h3 className="text-xl font-bold mb-2 text-right">שינוי פונט</h3>
+                    <h3 className="text-xl font-bold mb-2 text-right">ערכות נושא</h3>
                     <Card>
-                        <select onChange={e => setFont(e.target.value)} className="w-full p-2.5 rounded-xl border border-black/10 bg-white/70 text-base">
+                        <div className="grid grid-cols-2 gap-3">
+                            {Object.entries(THEMES).map(([key, theme]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setThemeName(key)}
+                                    className={`p-3 rounded-lg text-right transition-all duration-200 border-2 ${themeName === key ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-card)] ring-[var(--accent-primary)]' : 'border-transparent hover:border-[var(--border-color)]'}`}
+                                    style={{ backgroundColor: 'var(--bg-card)', borderColor: themeName === key ? 'var(--accent-primary)' : 'transparent'}}
+                                >
+                                    <span className="font-bold block mb-2" style={{color: 'var(--text-primary)'}}>{theme.name}</span>
+                                    <div className="flex gap-1.5 h-6">
+                                        <div className="w-1/4 rounded" style={{ background: theme.colors['--bg-main'].startsWith('linear') ? theme.colors['--bg-main'] : theme.colors['--bg-main'] }}></div>
+                                        <div className="w-1/4 rounded" style={{ backgroundColor: theme.colors['--accent-primary'] }}></div>
+                                        <div className="w-1/4 rounded" style={{ backgroundColor: theme.colors['--text-primary'] }}></div>
+                                        <div className="w-1/4 rounded border" style={{ backgroundColor: theme.colors['--bg-card'].replace(/[\d\.]+\)$/, '1)'), borderColor: theme.colors['--border-color'] }}></div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </Card>
+                    <h3 className="text-xl font-bold mt-3 mb-2 text-right">שינוי פונט</h3>
+                    <Card>
+                        <select onChange={e => setFont(e.target.value)} className="w-full p-2.5 rounded-xl border text-base" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}>
                             <option value="'Assistant', Arial, sans-serif">Assistant (ברירת מחדל)</option>
                             <option value="'Varela Round', Arial, sans-serif">Varela Round</option>
                             <option value="'Rubik', sans-serif">Rubik</option>
@@ -591,11 +730,11 @@
                     <h3 className="text-xl font-bold mb-2 text-right">ניהול רקע</h3>
                     <Card>
                         <div className="flex gap-2 flex-wrap">
-                            <label className="bg-white/80 p-2.5 rounded-xl cursor-pointer border border-black/10 hover:bg-white transition-colors font-semibold">העלה רקע<input type="file" accept="image/*" className="hidden" onChange={handleBgUpload}/></label>
-                            <MainButton onClick={() => setBackground(PRESET_BACKGROUNDS[0])} className="bg-yellow-500 hover:bg-yellow-600">אפס רקע</MainButton>
-                            <MainButton onClick={handleRandomBg} className="bg-green-600 hover:bg-green-700">רקע אקראי</MainButton>
+                            <label className="p-2.5 rounded-xl cursor-pointer border hover:opacity-80 transition-opacity font-semibold" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}>העלה רקע<input type="file" accept="image/*" className="hidden" onChange={handleBgUpload}/></label>
+                            <MainButton onClick={() => setBackground(PRESET_BACKGROUNDS[0])} className="bg-yellow-500 hover:bg-yellow-600 text-white">אפס רקע</MainButton>
+                            <MainButton onClick={handleRandomBg} className="bg-green-600 hover:bg-green-700 text-white">רקע אקראי</MainButton>
                         </div>
-                        <hr className="my-3" />
+                        <hr className="my-3" style={{borderColor: 'var(--border-color)'}}/>
                         <div className="flex gap-2 flex-wrap">
                             {PRESET_BACKGROUNDS.slice(1).map((bg, i) => (
                                <div key={i} onClick={() => setBackground(bg)} className="w-20 h-14 rounded-lg cursor-pointer border-2 border-white/50 bg-cover bg-center shadow-md transition-transform hover:scale-105" style={{backgroundImage: bg.startsWith('linear') ? bg : `url(${bg})` }}></div>
@@ -618,7 +757,7 @@
                     <Input value={mapQuery} onChange={e => setMapQuery(e.target.value)} placeholder="חפש מיקום במפה..." className="max-w-xl"/>
                     <MainButton onClick={handleMapSearch}>חפש במפה</MainButton>
                 </div>
-                <div className="w-full h-[520px] rounded-lg overflow-hidden border border-black/10 shadow-inner">
+                <div className="w-full h-[520px] rounded-lg overflow-hidden border shadow-inner" style={{borderColor: 'var(--border-color)'}}>
                     <iframe src={iframeSrc} className="w-full h-full border-0" allowFullScreen loading="lazy"></iframe>
                 </div>
             </Card>
@@ -630,12 +769,12 @@
             if (iframe) iframe.src = iframe.src;
         };
         return (
-            <div className="rounded-2xl overflow-hidden shadow-2xl bg-white/70 backdrop-blur-xl border border-white/20">
-                <header className="flex justify-between items-center bg-blue-600 text-white p-2.5 px-3.5">
+            <div className="rounded-2xl overflow-hidden shadow-2xl border backdrop-blur-xl" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)'}}>
+                <header className="flex justify-between items-center p-2.5 px-3.5" style={{backgroundColor: 'var(--accent-primary)', color: 'var(--text-on-accent)'}}>
                     <h3 className="m-0 text-lg">{title}</h3>
                     <div className="flex gap-1.5">
-                        <button onClick={refreshIframe} className="bg-white text-blue-600 border-none px-2.5 py-1.5 rounded-lg font-bold cursor-pointer hover:bg-gray-200">רענן</button>
-                        <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-blue-600 border-none px-2.5 py-1.5 rounded-lg font-bold no-underline">פתח</a>
+                        <button onClick={refreshIframe} className="border-none px-2.5 py-1.5 rounded-lg font-bold cursor-pointer hover:opacity-80" style={{backgroundColor: 'var(--text-on-accent)', color: 'var(--accent-primary)'}}>רענן</button>
+                        <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="border-none px-2.5 py-1.5 rounded-lg font-bold no-underline" style={{backgroundColor: 'var(--text-on-accent)', color: 'var(--accent-primary)'}}>פתח</a>
                     </div>
                 </header>
                 <iframe id={iframeId} src={siteUrl} className="w-full h-[720px] border-0" loading="lazy" referrerPolicy="no-referrer"></iframe>
@@ -678,7 +817,7 @@
                     {searchHistory.length > 0 ? (
                         <>
                             <div className="flex justify-end mb-4">
-                                <MainButton onClick={clearAllHistory} className="bg-red-600 hover:bg-red-700">
+                                <MainButton onClick={clearAllHistory} className="bg-red-600 hover:bg-red-700 text-white">
                                     נקה את כל ההיסטוריה
                                 </MainButton>
                             </div>
@@ -686,17 +825,18 @@
                                 {searchHistory.map((item, index) => (
                                     <li 
                                         key={index}
-                                        className="flex justify-between items-center p-3 bg-white/60 rounded-lg shadow-sm flex-wrap gap-2"
+                                        className="flex justify-between items-center p-3 rounded-lg shadow-sm flex-wrap gap-2"
+                                        style={{backgroundColor: 'var(--bg-input)'}}
                                     >
-                                        <span className="font-semibold text-gray-800 flex-grow break-all">{item}</span>
+                                        <span className="font-semibold flex-grow break-all" style={{color: 'var(--text-primary)'}}>{item}</span>
                                         <div className="flex gap-2 flex-shrink-0">
-                                            <button 
+                                            <MainButton
                                                 onClick={() => handleSearch(item)}
-                                                className="py-1 px-3 rounded-md border-none bg-blue-500 text-white font-bold text-sm cursor-pointer hover:bg-blue-600 transition-colors"
+                                                className="py-1 px-3 !text-sm"
                                                 title={`חפש שוב: "${item}"`}
                                             >
                                                 חפש שוב
-                                            </button>
+                                            </MainButton>
                                             <button
                                                 onClick={() => deleteHistoryItem(item)}
                                                 className="py-1 px-3 rounded-md border-none bg-red-500 text-white font-bold text-sm cursor-pointer hover:bg-red-600 transition-colors"
@@ -710,7 +850,7 @@
                             </ul>
                         </>
                     ) : (
-                        <p className="text-center text-gray-500 py-8">היסטוריית החיפושים שלך ריקה.</p>
+                        <p className="text-center py-8" style={{color: 'var(--text-secondary)'}}>היסטוריית החיפושים שלך ריקה.</p>
                     )}
                 </Card>
             </div>
@@ -738,7 +878,7 @@
                             alt={s.title}
                             onError={(e) => { e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"></svg>'; }}
                         />
-                        <a href={s.url} onClick={(e) => e.preventDefault()} className="block font-bold text-gray-800 no-underline cursor-pointer break-words">
+                        <a href={s.url} onClick={(e) => e.preventDefault()} className="block font-bold no-underline cursor-pointer break-words" style={{color: 'var(--text-primary)'}}>
                             {s.title}
                         </a>
                     </Card>
@@ -843,14 +983,14 @@
         return (
             <Card className="max-w-md mx-auto text-center">
                 <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, -1))} className="min-w-[36px] h-9 rounded-lg border border-black/10 bg-white/50 cursor-pointer text-xl hover:bg-white/80 transition">‹</button>
+                    <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, -1))} className="min-w-[36px] h-9 rounded-lg border cursor-pointer text-xl hover:opacity-80 transition" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)'}}>‹</button>
                     <div className="font-bold text-lg">{`${ps.monthName} ${hebrewYearGematria(ps.year)}`}</div>
-                    <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, 1))} className="min-w-[36px] h-9 rounded-lg border border-black/10 bg-white/50 cursor-pointer text-xl hover:bg-white/80 transition">›</button>
+                    <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, 1))} className="min-w-[36px] h-9 rounded-lg border cursor-pointer text-xl hover:opacity-80 transition" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)'}}>›</button>
                 </div>
                 <div className="mt-2 font-bold" aria-live="polite">{`היום: ${formatFullHebrew(now)}`}</div>
                 <table className="w-full border-collapse mt-2">
                     <thead>
-                        <tr>{headers.map(h => <th key={h} className="p-2 border border-black/10 bg-black/5 font-bold">{h}</th>)}</tr>
+                        <tr>{headers.map(h => <th key={h} className="p-2 border font-bold" style={{borderColor: 'var(--border-color)', backgroundColor: 'rgba(0,0,0,0.05)'}}>{h}</th>)}</tr>
                     </thead>
                     <tbody>
                         {Array.from({ length: Math.ceil((days.length + firstWeekday) / 7) }).map((_, weekIndex) => (
@@ -858,7 +998,7 @@
                                 {Array.from({ length: 7 }).map((_, dayIndex) => {
                                     const dayOfMonthIndex = weekIndex * 7 + dayIndex - firstWeekday;
                                     if (dayOfMonthIndex < 0 || dayOfMonthIndex >= days.length) {
-                                        return <td key={dayIndex} className="p-2 border border-black/10"></td>;
+                                        return <td key={dayIndex} className="p-2 border" style={{borderColor: 'var(--border-color)'}}></td>;
                                     }
                                     const gd = days[dayOfMonthIndex];
                                     const p = getHebParts(gd);
@@ -866,12 +1006,12 @@
                                     const iso = toISO(gd);
                                     const dayEvents = events.filter(e => e.date === iso);
                                     return (
-                                        <td key={dayIndex} className="p-2 border border-black/10 cursor-pointer relative hover:bg-blue-100/50 transition" onClick={() => setNewEventDate(iso)}>
-                                            <span className={isToday ? "inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white shadow-md" : ""}>
+                                        <td key={dayIndex} className="p-2 border cursor-pointer relative hover:bg-[rgba(0,0,0,0.05)] transition" style={{borderColor: 'var(--border-color)'}} onClick={() => setNewEventDate(iso)}>
+                                            <span style={isToday ? {backgroundColor: 'var(--accent-primary)', color: 'var(--text-on-accent)'} : {}} className={isToday ? "inline-flex items-center justify-center w-9 h-9 rounded-full shadow-md" : ""}>
                                                 {hebrewDayGematria(p.day)}
                                             </span>
-                                            {dayEvents.length > 0 && <span className="absolute top-1 right-1 block w-2.5 h-2.5 rounded-full bg-blue-500 border-2 border-white" title={dayEvents.map(e => e.title).join(', ')}></span>}
-                                            <small className="block text-xs text-gray-500 mt-1">{`${gd.getDate()}.${gd.getMonth() + 1}`}</small>
+                                            {dayEvents.length > 0 && <span className="absolute top-1 right-1 block w-2.5 h-2.5 rounded-full border-2 border-white" style={{backgroundColor: 'var(--accent-primary)'}} title={dayEvents.map(e => e.title).join(', ')}></span>}
+                                            <small className="block text-xs mt-1" style={{color: 'var(--text-secondary)'}}>{`${gd.getDate()}.${gd.getMonth() + 1}`}</small>
                                         </td>
                                     );
                                 })}
@@ -885,17 +1025,17 @@
                         <Input type="time" value={newEventTime} onChange={e => setNewEventTime(e.target.value)} aria-label="שעת אירוע" />
                         <Input type="text" value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} placeholder="כותרת אירוע" className="min-w-[220px] flex-grow" />
                         <MainButton onClick={addEventHandler}>הוסף</MainButton>
-                        <MainButton onClick={clearAllEvents} className="bg-red-600 hover:bg-red-700">מחק הכל</MainButton>
+                        <MainButton onClick={clearAllEvents} className="bg-red-600 hover:bg-red-700 text-white">מחק הכל</MainButton>
                     </div>
-                    <small className="text-gray-500">טיפ: לחץ על יום בלוח למילוי אוטומטי של התאריך.</small>
+                    <small style={{color: 'var(--text-secondary)'}}>טיפ: לחץ על יום בלוח למילוי אוטומטי של התאריך.</small>
                     <div className="mt-3">
                         <h4 className="font-bold mb-2">אירועים בחודש הנוכחי</h4>
                         <ul className="list-none p-0 m-0 grid gap-2">
                             {currentMonthEvents.map((e, i) => (
-                               <li key={i} className="bg-black/5 border border-black/10 rounded-lg p-2.5 flex justify-between items-center text-sm">
+                               <li key={i} className="border rounded-lg p-2.5 flex justify-between items-center text-sm" style={{backgroundColor: 'rgba(0,0,0,0.05)', borderColor: 'var(--border-color)'}}>
                                    <div>
                                       <span className="font-bold">{e.title}</span>
-                                      <span className="text-gray-600 mr-2">{new Date(e.date+'T00:00:00').toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}{e.time && ` ${e.time}`}</span>
+                                      <span className="mr-2" style={{color: 'var(--text-secondary)'}}>{new Date(e.date+'T00:00:00').toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}{e.time && ` ${e.time}`}</span>
                                    </div>
                                    <button onClick={() => deleteEventHandler(e.date, e.title)} className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600">מחק</button>
                                </li>
@@ -993,7 +1133,8 @@
                     <select
                         value={selectedRegion}
                         onChange={e => setSelectedRegion(e.target.value)}
-                        className="text-xl font-bold bg-white/70 border border-black/10 rounded-lg focus:ring-2 focus:ring-blue-400 p-2 cursor-pointer"
+                        className="text-xl font-bold border rounded-lg focus:ring-2 focus:ring-[var(--accent-primary)] p-2 cursor-pointer"
+                        style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}
                         aria-label="בחר אזור"
                         disabled={loading}
                     >
@@ -1001,7 +1142,7 @@
                             <option key={region} value={region}>{region}</option>
                         ))}
                     </select>
-                    <button onClick={fetchWeather} title="רענן" className="text-gray-400 hover:text-gray-700 transition p-1 disabled:opacity-50 disabled:cursor-wait" disabled={loading}>
+                    <button onClick={fetchWeather} title="רענן" className="transition p-1 disabled:opacity-50 disabled:cursor-wait" style={{color: 'var(--text-secondary)'}} disabled={loading}>
                          <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" /></svg>
                     </button>
                 </div>
@@ -1014,7 +1155,7 @@
                     </div>
                 ) : weatherData ? (
                     <>
-                        <p className="text-gray-600 text-right h-6">{weatherData.current.description}</p>
+                        <p className="text-right h-6" style={{color: 'var(--text-secondary)'}}>{weatherData.current.description}</p>
                         <div className="flex items-center justify-center my-4">
                             <span className="text-7xl">{weatherData.current.icon}</span>
                             <span className="text-6xl font-bold mr-4">{weatherData.current.temperature}°</span>
@@ -1026,7 +1167,7 @@
                                     <div className="text-3xl my-1">{day.icon}</div>
                                     <div>
                                         <span className="font-semibold">{day.maxTemp}°</span>
-                                        <span className="text-gray-500 ml-1">{day.minTemp}°</span>
+                                        <span className="ml-1" style={{color: 'var(--text-secondary)'}}>{day.minTemp}°</span>
                                     </div>
                                 </div>
                             ))}
@@ -1097,7 +1238,7 @@
                         <Input value={newShortcutTitle} onChange={e => setNewShortcutTitle(e.target.value)} placeholder="שם הקיצור (אופציונלי)" className="w-48"/>
                         <Input value={newShortcutUrl} onChange={e => setNewShortcutUrl(e.target.value)} placeholder="כתובת אינטרנט (URL)" className="w-72"/>
                         <MainButton onClick={handleAddShortcut}>הוסף קישור</MainButton>
-                        <MainButton onClick={handleExport} className="bg-teal-600 hover:bg-teal-700">ייצא JSON</MainButton>
+                        <MainButton onClick={handleExport} className="bg-teal-600 hover:bg-teal-700 text-white">ייצא JSON</MainButton>
                     </div>
                 </Card>
                 <div className="flex flex-col lg:flex-row gap-4 items-start">
@@ -1118,13 +1259,26 @@
         const [activeTab, setActiveTab] = useState(Tab.Home);
         const [background, setBackground] = useLocalStorage('dashboard_bg_v3', PRESET_BACKGROUNDS[0]);
         const [font, setFont] = useState("'Assistant', Arial, sans-serif");
+        const [themeName, setThemeName] = useLocalStorage('dashboard_theme_v1', 'light');
+
+        useEffect(() => {
+            const theme = THEMES[themeName] || THEMES.light;
+            Object.entries(theme.colors).forEach(([key, value]) => {
+                document.documentElement.style.setProperty(key, value);
+            });
+        }, [themeName]);
+
         useEffect(() => {
             document.body.style.fontFamily = font;
         }, [font]);
+
         useEffect(() => {
             document.body.classList.remove('animated-bg');
             if (!background) {
-                document.body.classList.add('animated-bg');
+                document.body.style.background = 'var(--bg-main)';
+                if (String(document.body.style.background).includes('gradient')) {
+                   document.body.classList.add('animated-bg');
+                }
                 return;
             }
             if (background.startsWith('linear')) {
@@ -1139,6 +1293,7 @@
                 document.body.style.animation = 'none';
             }
         }, [background]);
+        
         return (
             <div className="flex h-screen w-screen bg-transparent">
                 <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -1149,12 +1304,12 @@
                         <Panel id={Tab.Tools} activeTab={activeTab}><ToolsPanel /></Panel>
                         <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel /></Panel>
                         <Panel id={Tab.History} activeTab={activeTab}><HistoryPanel /></Panel>
-                        <Panel id={Tab.Design} activeTab={activeTab}><DesignPanel setFont={setFont} setBackground={setBackground} /></Panel>
+                        <Panel id={Tab.Design} activeTab={activeTab}><DesignPanel setFont={setFont} setBackground={setBackground} themeName={themeName} setThemeName={setThemeName} /></Panel>
                         <Panel id={Tab.Map} activeTab={activeTab}><MapPanel /></Panel>
                         <Panel id={Tab.News} activeTab={activeTab}><NewsPanel /></Panel>
                         <Panel id={Tab.Music} activeTab={activeTab}><MusicPanel /></Panel>
                     </main>
-                    <footer className="text-center mt-3 text-gray-600/80 font-semibold">
+                    <footer className="text-center mt-3 font-semibold" style={{color: 'var(--text-secondary)'}}>
                         דשבורד מקומי — כל הנתונים נשמרים בדפדפן שלך
                     </footer>
                 </div>
