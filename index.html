@@ -26,6 +26,8 @@
       --accent-primary-hover: #1d4ed8;
       --border-color: rgba(0, 0, 0, 0.1);
       --shadow-color-rgb: 0, 0, 0;
+      --shadow-color-light-rgb: 255, 255, 255;
+      --shadow-color-dark-rgb: 212, 212, 212;
     }
 
     body {
@@ -62,13 +64,73 @@
     html {
       scroll-behavior: smooth;
     }
+    
+    /* Skin System Styles */
+    .nav-container-style, .page-header-style, .card-style, .input-style, .button-style {
+      transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s, border-radius 0.3s, backdrop-filter 0.3s;
+    }
+
+    /* --- Modern Skin (Default) --- */
+    [data-skin="modern"] .nav-container-style { backdrop-filter: blur(16px); }
+    [data-skin="modern"] .page-header-style { backdrop-filter: blur(12px); border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(var(--shadow-color-rgb), 0.1), 0 4px 6px -4px rgba(var(--shadow-color-rgb), 0.1); }
+    [data-skin="modern"] .card-style { backdrop-filter: blur(16px); border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(var(--shadow-color-rgb), 0.1), 0 4px 6px -4px rgba(var(--shadow-color-rgb), 0.1); }
+    [data-skin="modern"] .card-style:hover { box-shadow: 0 20px 25px -5px rgba(var(--shadow-color-rgb), 0.1), 0 8px 10px -6px rgba(var(--shadow-color-rgb), 0.1); }
+    [data-skin="modern"] .input-style { border-radius: 0.75rem; box-shadow: 0 1px 2px 0 rgba(var(--shadow-color-rgb), 0.05); }
+    [data-skin="modern"] .button-style { border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(var(--shadow-color-rgb), 0.1), 0 2px 4px -2px rgba(var(--shadow-color-rgb), 0.1); }
+    [data-skin="modern"] .button-style:hover { box-shadow: 0 10px 15px -3px rgba(var(--shadow-color-rgb), 0.1), 0 4px 6px -4px rgba(var(--shadow-color-rgb), 0.1); }
+
+    /* --- Minimalist Skin --- */
+    [data-skin="minimalist"] .nav-container-style,
+    [data-skin="minimalist"] .page-header-style,
+    [data-skin="minimalist"] .card-style { backdrop-filter: none; border-radius: 4px; box-shadow: none; border-width: 2px; }
+    [data-skin="minimalist"] .card-style:hover { border-color: var(--accent-primary); transform: none; }
+    [data-skin="minimalist"] .input-style { border-radius: 4px; box-shadow: none; border-width: 2px; }
+    [data-skin="minimalist"] .input-style:focus { border-color: var(--accent-primary); }
+    [data-skin="minimalist"] .button-style { border-radius: 4px; box-shadow: none; border: 2px solid transparent; }
+    [data-skin="minimalist"] .button-style:hover { transform: translateY(-2px); }
+
+    /* --- Neumorphic Skin --- */
+    [data-skin="neumorphic"] body { background: var(--bg-card) !important; animation: none !important; }
+    [data-skin="neumorphic"] .nav-container-style,
+    [data-skin="neumorphic"] .page-header-style,
+    [data-skin="neumorphic"] .card-style { backdrop-filter: none; border-radius: 1rem; border: 1px solid transparent; background-color: var(--bg-card); }
+    [data-skin="neumorphic"] .nav-container-style { background-color: transparent; }
+    
+    [data-skin="neumorphic"] .page-header-style,
+    [data-skin="neumorphic"] .card-style,
+    [data-skin="neumorphic"] .button-style {
+      box-shadow: 5px 5px 10px rgba(var(--shadow-color-dark-rgb), 0.5), -5px -5px 10px rgba(var(--shadow-color-light-rgb), 0.5);
+    }
+    [data-skin="neumorphic"] .card-style:hover { transform: none; box-shadow: 7px 7px 14px rgba(var(--shadow-color-dark-rgb), 0.5), -7px -7px 14px rgba(var(--shadow-color-light-rgb), 0.5); }
+    [data-skin="neumorphic"] .input-style {
+      border-radius: 0.75rem;
+      border: 1px solid transparent;
+      box-shadow: inset 3px 3px 6px rgba(var(--shadow-color-dark-rgb), 0.5), inset -3px -3px 6px rgba(var(--shadow-color-light-rgb), 0.5);
+    }
+    [data-skin="neumorphic"] .button-style { border-radius: 0.75rem; }
+    [data-skin="neumorphic"] .button-style:hover { transform: translateY(-2px); }
+    [data-skin="neumorphic"] .button-style:active {
+      box-shadow: inset 3px 3px 6px rgba(var(--shadow-color-dark-rgb), 0.5), inset -3px -3px 6px rgba(var(--shadow-color-light-rgb), 0.5);
+      transform: translateY(1px);
+    }
+    
+    .dragging-placeholder {
+      border: 2px dashed var(--accent-primary);
+      background-color: rgba(var(--accent-primary-rgb), 0.1);
+    }
+    .dragging {
+      opacity: 0.5;
+      transform: scale(0.98);
+    }
+
   </style>
 <script type="importmap">
 {
   "imports": {
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0"
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://esm.run/@google/genai"
   }
 }
 </script>
@@ -78,6 +140,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
     import ReactDOM from 'react-dom/client';
+    import { GoogleGenAI } from "@google/genai";
 
     // Formerly types.ts
     const Tab = {
@@ -93,17 +156,17 @@
 
     // Formerly constants.ts
     const DEFAULT_SHORTCUTS = [
-      { title: 'Kore - חדשות', url: 'https://www.kore.co.il/' },
-      { title: 'Amazon', url: 'https://www.amazon.com' },
-      { title: 'eBay', url: 'https://www.ebay.com' },
-      { title: 'Zap', url: 'https://www.zap.co.il/' },
-      { title: 'צ\'אט GPT', url: 'https://chat.openai.com' },
-      { title: 'Gmail', url: 'https://mail.google.com' },
-      { title: 'Outlook', url: 'https://outlook.live.com' },
-      { title: 'Google Drive', url: 'https://drive.google.com' },
-      { title: 'Dropbox', url: 'https://www.dropbox.com' },
-      { title: 'YouTube', url: 'https://www.youtube.com' },
-      { title: 'מזג אוויר (IMS)', url: 'https://www.ims.gov.il/' },
+      { id: 'default-1', title: 'Kore - חדשות', url: 'https://www.kore.co.il/' },
+      { id: 'default-2', title: 'Amazon', url: 'https://www.amazon.com' },
+      { id: 'default-3', title: 'eBay', url: 'https://www.ebay.com' },
+      { id: 'default-4', title: 'Zap', url: 'https://www.zap.co.il/' },
+      { id: 'default-5', title: 'צ\'אט GPT', url: 'https://chat.openai.com' },
+      { id: 'default-6', title: 'Gmail', url: 'https://mail.google.com' },
+      { id: 'default-7', title: 'Outlook', url: 'https://outlook.live.com' },
+      { id: 'default-8', title: 'Google Drive', url: 'https://drive.google.com' },
+      { id: 'default-9', title: 'Dropbox', url: 'https://www.dropbox.com' },
+      { id: 'default-10', title: 'YouTube', url: 'https://www.youtube.com' },
+      { id: 'default-11', title: 'מזג אוויר (IMS)', url: 'https://www.ims.gov.il/' },
     ];
     const PRESET_BACKGROUNDS = [
       'linear-gradient(135deg,#b6f0e1,#c6d9ff)', // Default
@@ -134,6 +197,8 @@
           '--accent-primary-hover': '#1d4ed8',
           '--border-color': 'rgba(0, 0, 0, 0.1)',
           '--shadow-color-rgb': '0, 0, 0',
+          '--shadow-color-light-rgb': '255, 255, 255',
+          '--shadow-color-dark-rgb': '212, 212, 212',
         }
       },
       dark: {
@@ -150,6 +215,8 @@
           '--accent-primary-hover': '#0d9488',
           '--border-color': 'rgba(255, 255, 255, 0.15)',
           '--shadow-color-rgb': '0, 0, 0',
+          '--shadow-color-light-rgb': '55, 65, 81',
+          '--shadow-color-dark-rgb': '10, 10, 20',
         }
       },
       ocean: {
@@ -166,6 +233,8 @@
           '--accent-primary-hover': '#0077b6',
           '--border-color': 'rgba(255, 255, 255, 0.2)',
           '--shadow-color-rgb': '0, 0, 0',
+          '--shadow-color-light-rgb': '255, 255, 255',
+          '--shadow-color-dark-rgb': '200, 220, 255',
         }
       },
       sunset: {
@@ -182,8 +251,19 @@
               '--accent-primary-hover': '#A82020',
               '--border-color': 'rgba(0, 0, 0, 0.1)',
               '--shadow-color-rgb': '0, 0, 0',
+              '--shadow-color-light-rgb': '255, 230, 230',
+              '--shadow-color-dark-rgb': '222, 180, 180',
           }
       }
+    };
+    const SKINS = {
+      modern: { name: 'מודרני' },
+      minimalist: { name: 'מינימליסטי' },
+      neumorphic: { name: 'נאומורפי' },
+    };
+    const LAYOUTS = {
+      classic: { name: 'קלאסי' },
+      topbar: { name: 'סרגל עליון' },
     };
 
     // Formerly hooks/useLocalStorage.ts
@@ -231,11 +311,11 @@
         return () => {
           window.removeEventListener('storage', handleStorageChange);
         };
-      }, [key]);
+      }, [key, initialValue]);
 
       return [storedValue, setValue];
     }
-
+    
     // Formerly components/Shared.tsx
     const HEBREW_QUOTES = [
         { quote: "אם אין אני לי, מי לי? וכשאני לעצמי, מה אני? ואם לא עכשיו, אימתי?", author: "הלל הזקן" },
@@ -277,28 +357,28 @@
       news: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2-H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>,
       music: ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z"/></svg>,
     };
+    const TABS = [
+        { id: Tab.Home, label: 'דף הבית' },
+        { id: Tab.Tools, label: 'כלים' },
+        { id: Tab.Personal, label: 'אישי' },
+        { id: Tab.History, label: 'היסטוריה' },
+        { id: Tab.Design, label: 'עיצוב' },
+        { id: Tab.Map, label: 'מפה' },
+        { id: Tab.News, label: 'חדשות' },
+        { id: Tab.Music, label: 'מוזיקה' },
+    ];
     const Sidebar = ({ activeTab, setActiveTab }) => {
-        const tabs = [
-            { id: Tab.Home, label: 'דף הבית' },
-            { id: Tab.Tools, label: 'כלים' },
-            { id: Tab.Personal, label: 'אישי' },
-            { id: Tab.History, label: 'היסטוריה' },
-            { id: Tab.Design, label: 'עיצוב' },
-            { id: Tab.Map, label: 'מפה' },
-            { id: Tab.News, label: 'חדשות' },
-            { id: Tab.Music, label: 'מוזיקה' },
-        ];
         return (
             <aside 
-              className="w-64 backdrop-blur-lg p-4 flex flex-col gap-2 shrink-0 h-full"
+              className="nav-container-style w-64 p-4 flex flex-col gap-2 shrink-0 h-full"
               style={{backgroundColor: 'var(--bg-sidebar)'}}
             >
                 <h1 
                   className="text-2xl font-bold text-center mb-4 font-[Varela Round]"
                   style={{color: 'var(--text-primary)'}}
-                >הדשבורד שלי</h1>
+                >אפשרויות</h1>
                 <nav className="flex flex-col gap-2">
-                    {tabs.map(tab => {
+                    {TABS.map(tab => {
                         const Icon = icons[tab.id];
                         const isActive = activeTab === tab.id;
                         return (
@@ -322,6 +402,41 @@
             </aside>
         );
     };
+    const TopNavBar = ({ activeTab, setActiveTab }) => {
+        return (
+            <header
+                className="nav-container-style w-full p-2 px-4 flex items-center justify-between shrink-0 shadow-md"
+                style={{ backgroundColor: 'var(--bg-sidebar)' }}
+            >
+                <h1 className="text-xl font-bold font-[Varela Round]" style={{ color: 'var(--text-primary)' }}>
+                    אפשרויות
+                </h1>
+                <nav className="flex items-center gap-1">
+                    {TABS.map(tab => {
+                        const Icon = icons[tab.id];
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 py-2 px-3 rounded-lg font-semibold transition-colors duration-200 relative`}
+                                role="tab"
+                                aria-selected={isActive}
+                                title={tab.label}
+                                style={{
+                                    backgroundColor: isActive ? 'var(--accent-primary)' : 'transparent',
+                                    color: isActive ? 'var(--text-on-accent)' : 'var(--text-primary)',
+                                }}
+                            >
+                                <Icon className="w-5 h-5" />
+                                <span className="hidden md:inline">{tab.label}</span>
+                            </button>
+                        );
+                    })}
+                </nav>
+            </header>
+        );
+    };
     const PageHeader = () => {
         const [dateTime, setDateTime] = useState(new Date());
         useEffect(() => {
@@ -339,7 +454,7 @@
         return (
             <header className="mb-4" role="banner">
                 <div 
-                    className="backdrop-blur-md p-4 px-6 rounded-2xl shadow-lg border flex justify-between items-center"
+                    className="page-header-style p-4 px-6 border flex justify-between items-center"
                     style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)'}}
                 >
                      <div className="text-right">
@@ -363,18 +478,18 @@
             </section>
         );
     };
-    const Card = ({ children, className = '', onClick }) => {
-        const baseClasses = "backdrop-blur-xl rounded-2xl p-4 text-center shadow-lg border transition-all duration-300 hover:shadow-xl hover:-translate-y-1";
-        const clickableClasses = onClick ? "cursor-pointer" : "";
+    const Card = ({ children, className = '', onClick, ...props }) => {
+        const baseClasses = "card-style p-4 text-center border transition-all duration-300";
+        const clickableClasses = onClick ? "cursor-pointer hover:-translate-y-1" : "";
         return (
             <div 
               className={`${baseClasses} ${clickableClasses} ${className}`} 
               onClick={onClick}
               style={{
                 backgroundColor: 'var(--bg-card)', 
-                borderColor: 'var(--border-color)', 
-                boxShadow: `0 10px 15px -3px rgba(var(--shadow-color-rgb), 0.1), 0 4px 6px -4px rgba(var(--shadow-color-rgb), 0.1)`
+                borderColor: 'var(--border-color)',
               }}
+              {...props}
             >
                 {children}
             </div>
@@ -382,7 +497,7 @@
     };
     const MainButton = ({ children, className, style, ...props }) => (
         <button
-            className={`py-2.5 px-5 rounded-xl border-none font-bold cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:shadow-none flex items-center justify-center gap-2 ${className}`}
+            className={`button-style py-2.5 px-5 border-none font-bold cursor-pointer transition-all duration-200 disabled:bg-gray-400 disabled:shadow-none flex items-center justify-center gap-2 ${className}`}
             style={{
               backgroundColor: 'var(--accent-primary)',
               color: 'var(--text-on-accent)',
@@ -397,7 +512,7 @@
     );
     const Input = ({ className, ...props }) => (
         <input
-            className={`w-full p-2.5 rounded-xl border text-base outline-none transition-shadow shadow-sm focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)] ${className}`}
+            className={`input-style w-full p-2.5 border text-base outline-none transition-shadow focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)] ${className}`}
             style={{
               backgroundColor: 'var(--bg-input)',
               borderColor: 'var(--border-color)',
@@ -549,9 +664,9 @@
                 <div className="flex-1 min-w-[260px]">
                     <h3 className="text-xl font-bold mb-2 text-right">תרגום מהיר</h3>
                     <Card>
-                        <textarea value={textToTranslate} onChange={e => setTextToTranslate(e.target.value)} rows={4} placeholder="הכנס טקסט לתרגום..." className="w-full p-2.5 rounded-xl border text-base outline-none transition-shadow shadow-sm focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)]" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}></textarea>
+                        <textarea value={textToTranslate} onChange={e => setTextToTranslate(e.target.value)} rows={4} placeholder="הכנס טקסט לתרגום..." className="input-style w-full p-2.5 border text-base outline-none transition-shadow focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)]" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}></textarea>
                         <div className="flex gap-2 mt-2">
-                            <select value={lang} onChange={e => setLang(e.target.value)} className="p-2.5 rounded-xl border text-base" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}>
+                            <select value={lang} onChange={e => setLang(e.target.value)} className="input-style p-2.5 border text-base" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}>
                                 <option value="he">עברית</option>
                                 <option value="en">אנגלית</option>
                                 <option value="es">ספרדית</option>
@@ -564,18 +679,62 @@
             </div>
         );
     };
+    const EditorToolbar = ({ onCommand }) => {
+        const commands = [
+            { cmd: 'bold', icon: 'B', title: 'הדגשה' },
+            { cmd: 'italic', icon: 'I', title: 'הטיה' },
+            { cmd: 'underline', icon: 'U', title: 'קו תחתון' },
+            { cmd: 'insertUnorderedList', icon: '•', title: 'רשימת תבליטים' },
+            { cmd: 'insertOrderedList', icon: '1.', title: 'רשימה ממוספרת' },
+        ];
+        return (
+            <div className="flex gap-1 mb-2 p-1 rounded-md" style={{ backgroundColor: 'var(--bg-input)'}}>
+                {commands.map(({ cmd, icon, title }) => (
+                    <button
+                        key={cmd}
+                        title={title}
+                        onClick={() => onCommand(cmd)}
+                        onMouseDown={e => e.preventDefault()}
+                        className="w-8 h-8 font-bold rounded-md hover:bg-[rgba(0,0,0,0.1)] transition-colors"
+                    >
+                        {icon}
+                    </button>
+                ))}
+            </div>
+        );
+    };
     const Notes = () => {
-        const [notes, setNotes] = useLocalStorage('dashboard_notes_v3', '');
-        const [tempNotes, setTempNotes] = useState(notes);
-        useEffect(() => setTempNotes(notes), [notes]);
+        const [notes, setNotes] = useLocalStorage('dashboard_notes_v4_html', '');
+        const editorRef = useRef(null);
+        
+        const handleSave = () => {
+            if (editorRef.current) {
+                setNotes(editorRef.current.innerHTML);
+                alert('פתק נשמר');
+            }
+        };
+
+        const handleCommand = (cmd) => {
+            document.execCommand(cmd, false, null);
+            editorRef.current?.focus();
+        };
+
         return (
             <>
                 <h3 className="text-xl font-bold mb-2 text-right">פתקים אישיים</h3>
                 <Card className="text-right">
-                    <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} rows={8} placeholder="הערות — נשמרות בדפדפן" className="w-full p-2.5 rounded-xl border text-base outline-none transition-shadow shadow-sm focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)]" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}></textarea>
+                    <EditorToolbar onCommand={handleCommand} />
+                    <div
+                        ref={editorRef}
+                        contentEditable="true"
+                        suppressContentEditableWarning={true}
+                        className="input-style w-full p-2.5 border text-base outline-none transition-shadow focus:shadow-md focus:ring-2 focus:ring-[var(--accent-primary)] min-h-[160px] text-right"
+                        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                        dangerouslySetInnerHTML={{ __html: notes }}
+                    ></div>
                     <div className="flex gap-2 mt-2">
-                        <MainButton onClick={() => { setNotes(tempNotes); alert('פתק נשמר'); }}>שמור</MainButton>
-                        <MainButton onClick={() => { if(window.confirm('למחוק?')) setTempNotes(''); }} className="bg-gray-500 hover:bg-gray-600 text-white">נקה</MainButton>
+                        <MainButton onClick={handleSave}>שמור</MainButton>
+                        <MainButton onClick={() => { if(window.confirm('למחוק?')) { if(editorRef.current) editorRef.current.innerHTML = ''; } }} className="bg-gray-500 hover:bg-gray-600 text-white">נקה</MainButton>
                     </div>
                 </Card>
             </>
@@ -622,20 +781,35 @@
             </>
         );
     };
-    const AdvancedShortcuts = () => {
-        const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v3', []);
-        const deleteShortcut = (index) => {
-            setShortcuts(prev => prev.filter((_, i) => i !== index));
+    const AdvancedShortcuts = ({ shortcuts, setShortcuts, groups }) => {
+        const deleteShortcut = (id) => {
+            setShortcuts(prev => prev.filter(s => s.id !== id));
         };
+        
+        const updateShortcutGroup = (id, newGroupId) => {
+            setShortcuts(prev => prev.map(s => s.id === id ? { ...s, groupId: newGroupId ? parseInt(newGroupId) : null } : s));
+        };
+
         return (
             <>
                 <h3 className="text-xl font-bold mb-2 text-right">ניהול קישורים</h3>
                 <Card className="text-right">
                     <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {shortcuts.map((s, i) => (
-                            <div key={i} className="flex justify-between items-center p-2 rounded-lg" style={{backgroundColor: 'var(--bg-input)'}}>
-                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{color: 'var(--accent-primary)'}}>{s.title}</a>
-                                <button onClick={() => deleteShortcut(i)} className="bg-red-500 text-white rounded px-2 py-1 text-sm hover:bg-red-600 transition-colors">מחק</button>
+                        {shortcuts.map((s) => (
+                            <div key={s.id} className="flex justify-between items-center p-2 rounded-lg gap-2" style={{backgroundColor: 'var(--bg-input)'}}>
+                                <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:underline flex-shrink truncate" style={{color: 'var(--accent-primary)'}}>{s.title}</a>
+                                <div className="flex gap-2 items-center flex-shrink-0">
+                                    <select 
+                                        value={s.groupId || ''} 
+                                        onChange={(e) => updateShortcutGroup(s.id, e.target.value)}
+                                        className="input-style p-1 text-sm rounded-md"
+                                        style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)'}}
+                                    >
+                                        <option value="">ללא קבוצה</option>
+                                        {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                    </select>
+                                    <button onClick={() => deleteShortcut(s.id)} className="bg-red-500 text-white rounded px-2 py-1 text-sm hover:bg-red-600 transition-colors">מחק</button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -643,18 +817,67 @@
             </>
         );
     };
-    const PersonalPanel = () => (
-        <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 min-w-[260px]">
-                <Notes />
-                <TodoList />
+    const ShortcutGroupManager = ({ groups, setGroups }) => {
+        const [newGroupName, setNewGroupName] = useState('');
+
+        const addGroup = () => {
+            if (!newGroupName.trim()) return;
+            setGroups(prev => [...prev, { id: Date.now(), name: newGroupName.trim() }]);
+            setNewGroupName('');
+        };
+
+        const deleteGroup = (id) => {
+            if (window.confirm('מחיקת קבוצה תשאיר את הקישורים שלה ללא שיוך. להמשיך?')) {
+                setGroups(prev => prev.filter(g => g.id !== id));
+            }
+        };
+
+        const updateGroupName = (id, newName) => {
+            setGroups(prev => prev.map(g => g.id === id ? { ...g, name: newName } : g));
+        };
+
+        return (
+             <>
+                <h3 className="text-xl font-bold mt-3 mb-2 text-right">ניהול קבוצות קישורים</h3>
+                <Card className="text-right">
+                    <div className="flex gap-2 mb-3">
+                        <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addGroup()} placeholder="שם קבוצה חדשה..." />
+                        <MainButton onClick={addGroup}>הוסף קבוצה</MainButton>
+                    </div>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {groups.map((g) => (
+                            <div key={g.id} className="flex justify-between items-center p-2 rounded-lg" style={{backgroundColor: 'var(--bg-input)'}}>
+                                <Input 
+                                    value={g.name} 
+                                    onChange={(e) => updateGroupName(g.id, e.target.value)}
+                                    className="p-1 border-none bg-transparent"
+                                />
+                                <button onClick={() => deleteGroup(g.id)} className="bg-red-500 text-white rounded px-2 py-1 text-sm hover:bg-red-600 transition-colors">מחק</button>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </>
+        )
+    };
+    const PersonalPanel = () => {
+        const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
+        const [shortcutGroups, setShortcutGroups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
+
+        return (
+            <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1 min-w-[260px]">
+                    <Notes />
+                    <TodoList />
+                </div>
+                <div className="flex-1 min-w-[260px]">
+                    <AdvancedShortcuts shortcuts={shortcuts} setShortcuts={setShortcuts} groups={shortcutGroups} />
+                    <ShortcutGroupManager groups={shortcutGroups} setGroups={setShortcutGroups} />
+                </div>
             </div>
-            <div className="flex-1 min-w-[260px]">
-                <AdvancedShortcuts />
-            </div>
-        </div>
-    );
-    const DesignPanel = ({ setFont, setBackground, themeName, setThemeName }) => {
+        );
+    };
+    const DesignPanel = ({ setFont, setBackground, themeName, setThemeName, skin, setSkin, layout, setLayout }) => {
         const [holidays, setHolidays] = useLocalStorage('dashboard_holidays_v1', []);
         const [newHolidayDate, setNewHolidayDate] = useState('');
         const [newHolidayTitle, setNewHolidayTitle] = useState('');
@@ -682,7 +905,37 @@
         return (
             <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1 min-w-[260px]">
-                    <h3 className="text-xl font-bold mb-2 text-right">ערכות נושא</h3>
+                     <h3 className="text-xl font-bold mb-2 text-right">פריסת עמוד</h3>
+                    <Card>
+                        <div className="grid grid-cols-2 gap-3">
+                            {Object.entries(LAYOUTS).map(([key, l]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setLayout(key)}
+                                    className={`p-3 text-center rounded-lg transition-all duration-200 border-2 ${layout === key ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-card)] ring-[var(--accent-primary)]' : 'border-transparent hover:border-[var(--border-color)]'}`}
+                                    style={{ backgroundColor: 'var(--bg-input)', borderColor: layout === key ? 'var(--accent-primary)' : 'transparent'}}
+                                >
+                                    <span className="font-bold block" style={{color: 'var(--text-primary)'}}>{l.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </Card>
+                    <h3 className="text-xl font-bold mt-3 mb-2 text-right">סגנון עיצוב</h3>
+                    <Card>
+                        <div className="grid grid-cols-3 gap-3">
+                            {Object.entries(SKINS).map(([key, s]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setSkin(key)}
+                                    className={`p-3 text-center rounded-lg transition-all duration-200 border-2 ${skin === key ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-card)] ring-[var(--accent-primary)]' : 'border-transparent hover:border-[var(--border-color)]'}`}
+                                    style={{ backgroundColor: 'var(--bg-input)', borderColor: skin === key ? 'var(--accent-primary)' : 'transparent'}}
+                                >
+                                    <span className="font-bold block" style={{color: 'var(--text-primary)'}}>{s.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </Card>
+                    <h3 className="text-xl font-bold mt-3 mb-2 text-right">ערכות נושא</h3>
                     <Card>
                         <div className="grid grid-cols-2 gap-3">
                             {Object.entries(THEMES).map(([key, theme]) => (
@@ -714,6 +967,23 @@
                             <option value="'Courier New', monospace">Monospace</option>
                         </select>
                     </Card>
+                    
+                </div>
+                <div className="flex-1 min-w-[260px]">
+                    <h3 className="text-xl font-bold mb-2 text-right">ניהול רקע</h3>
+                    <Card>
+                        <div className="flex gap-2 flex-wrap">
+                            <label className="button-style p-2.5 cursor-pointer hover:opacity-80 transition-opacity font-semibold" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}>העלה רקע<input type="file" accept="image/*" className="hidden" onChange={handleBgUpload}/></label>
+                            <MainButton onClick={() => setBackground(PRESET_BACKGROUNDS[0])} className="bg-yellow-500 hover:bg-yellow-600 text-white">אפס רקע</MainButton>
+                            <MainButton onClick={handleRandomBg} className="bg-green-600 hover:bg-green-700 text-white">רקע אקראי</MainButton>
+                        </div>
+                        <hr className="my-3" style={{borderColor: 'var(--border-color)'}}/>
+                        <div className="flex gap-2 flex-wrap">
+                            {PRESET_BACKGROUNDS.slice(1).map((bg, i) => (
+                               <div key={i} onClick={() => setBackground(bg)} className="w-20 h-14 rounded-lg cursor-pointer border-2 border-white/50 bg-cover bg-center shadow-md transition-transform hover:scale-105" style={{backgroundImage: bg.startsWith('linear') ? bg : `url(${bg})` }}></div>
+                            ))}
+                        </div>
+                    </Card>
                     <h3 className="text-xl font-bold mt-3 mb-2 text-right">תאריכים חשובים</h3>
                     <Card className="text-right">
                         <div className="flex gap-2">
@@ -724,22 +994,6 @@
                         <ul className="mt-2 text-right space-y-1">
                             {holidays.map((h, i) => <li key={i}>{`${h.date} — ${h.title}`}</li>)}
                         </ul>
-                    </Card>
-                </div>
-                <div className="flex-1 min-w-[260px]">
-                    <h3 className="text-xl font-bold mb-2 text-right">ניהול רקע</h3>
-                    <Card>
-                        <div className="flex gap-2 flex-wrap">
-                            <label className="p-2.5 rounded-xl cursor-pointer border hover:opacity-80 transition-opacity font-semibold" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}>העלה רקע<input type="file" accept="image/*" className="hidden" onChange={handleBgUpload}/></label>
-                            <MainButton onClick={() => setBackground(PRESET_BACKGROUNDS[0])} className="bg-yellow-500 hover:bg-yellow-600 text-white">אפס רקע</MainButton>
-                            <MainButton onClick={handleRandomBg} className="bg-green-600 hover:bg-green-700 text-white">רקע אקראי</MainButton>
-                        </div>
-                        <hr className="my-3" style={{borderColor: 'var(--border-color)'}}/>
-                        <div className="flex gap-2 flex-wrap">
-                            {PRESET_BACKGROUNDS.slice(1).map((bg, i) => (
-                               <div key={i} onClick={() => setBackground(bg)} className="w-20 h-14 rounded-lg cursor-pointer border-2 border-white/50 bg-cover bg-center shadow-md transition-transform hover:scale-105" style={{backgroundImage: bg.startsWith('linear') ? bg : `url(${bg})` }}></div>
-                            ))}
-                        </div>
                     </Card>
                 </div>
             </div>
@@ -769,7 +1023,7 @@
             if (iframe) iframe.src = iframe.src;
         };
         return (
-            <div className="rounded-2xl overflow-hidden shadow-2xl border backdrop-blur-xl" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)'}}>
+            <div className="card-style overflow-hidden border" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)'}}>
                 <header className="flex justify-between items-center p-2.5 px-3.5" style={{backgroundColor: 'var(--accent-primary)', color: 'var(--text-on-accent)'}}>
                     <h3 className="m-0 text-lg">{title}</h3>
                     <div className="flex gap-1.5">
@@ -825,7 +1079,7 @@
                                 {searchHistory.map((item, index) => (
                                     <li 
                                         key={index}
-                                        className="flex justify-between items-center p-3 rounded-lg shadow-sm flex-wrap gap-2"
+                                        className="flex justify-between items-center p-3 rounded-lg flex-wrap gap-2"
                                         style={{backgroundColor: 'var(--bg-input)'}}
                                     >
                                         <span className="font-semibold flex-grow break-all" style={{color: 'var(--text-primary)'}}>{item}</span>
@@ -860,28 +1114,62 @@
     // Formerly components/HomePanel.tsx
     const getDomainFromUrl = (url) => {
         try {
-            return new URL(url).hostname;
+            // Ensure URL has a protocol for the URL constructor
+            let fullUrl = url;
+            if (!/^https?:\/\//i.test(url)) {
+                fullUrl = 'https://' + url;
+            }
+            return new URL(fullUrl).hostname;
         } catch (e) {
             return url;
         }
     };
     const ShortcutGrid = () => {
-        const [shortcuts] = useLocalStorage('dashboard_shortcuts_v3', []);
-        const allShortcuts = [...DEFAULT_SHORTCUTS, ...shortcuts];
+        const [shortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
+        const [groups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
+        
+        const groupedShortcuts = useMemo(() => {
+            const groupMap = new Map(groups.map(g => [g.id, { ...g, shortcuts: [] }]));
+            const uncategorized = [];
+
+            const allShortcuts = [...DEFAULT_SHORTCUTS.map(s => ({...s, groupId: null})), ...shortcuts];
+
+            allShortcuts.forEach(s => {
+                if (s.groupId && groupMap.has(s.groupId)) {
+                    groupMap.get(s.groupId).shortcuts.push(s);
+                } else {
+                    uncategorized.push(s);
+                }
+            });
+
+            const result = Array.from(groupMap.values()).filter(g => g.shortcuts.length > 0);
+            if (uncategorized.length > 0) {
+                result.push({ id: 'uncategorized', name: 'קישורים כלליים', shortcuts: uncategorized });
+            }
+            return result;
+        }, [shortcuts, groups]);
+
         return (
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
-                {allShortcuts.map((s, idx) => (
-                    <Card key={`${s.url}-${idx}`} className="user-shortcut" onClick={() => window.location.href = s.url}>
-                        <img
-                            className="w-14 h-14 object-contain mb-2 rounded-xl bg-white p-1.5 shadow-md mx-auto"
-                            src={`https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(getDomainFromUrl(s.url))}`}
-                            alt={s.title}
-                            onError={(e) => { e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"></svg>'; }}
-                        />
-                        <a href={s.url} onClick={(e) => e.preventDefault()} className="block font-bold no-underline cursor-pointer break-words" style={{color: 'var(--text-primary)'}}>
-                            {s.title}
-                        </a>
-                    </Card>
+            <div className="space-y-6">
+                {groupedShortcuts.map(group => (
+                    <div key={group.id}>
+                        <h3 className="text-xl font-bold mb-2 text-right">{group.name}</h3>
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
+                            {group.shortcuts.map((s, idx) => (
+                                <Card key={s.id || `${s.url}-${idx}`} className="user-shortcut" onClick={() => window.location.href = s.url}>
+                                    <img
+                                        className="w-14 h-14 object-contain mb-2 rounded-xl bg-white p-1.5 shadow-md mx-auto"
+                                        src={`https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(getDomainFromUrl(s.url))}`}
+                                        alt={s.title}
+                                        onError={(e) => { e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"></svg>'; }}
+                                    />
+                                    <a href={s.url} onClick={(e) => e.preventDefault()} className="block font-bold no-underline cursor-pointer break-words" style={{color: 'var(--text-primary)'}}>
+                                        {s.title}
+                                    </a>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
                 ))}
             </div>
         );
@@ -981,7 +1269,7 @@
           .filter(e => monthISO.includes(e.date))
           .sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
         return (
-            <Card className="max-w-md mx-auto text-center">
+            <Card className="text-center">
                 <div className="flex items-center justify-center gap-2">
                     <button onClick={() => setViewAnchor(shiftHebMonth(viewAnchor, -1))} className="min-w-[36px] h-9 rounded-lg border cursor-pointer text-xl hover:opacity-80 transition" style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)'}}>‹</button>
                     <div className="font-bold text-lg">{`${ps.monthName} ${hebrewYearGematria(ps.year)}`}</div>
@@ -1128,7 +1416,7 @@
         }, [fetchWeather, selectedRegion, weatherData, lastFetch]);
 
         return (
-            <Card className="text-right max-w-md mx-auto">
+            <Card className="text-right">
                 <div className="flex justify-between items-start mb-2">
                     <select
                         value={selectedRegion}
@@ -1184,7 +1472,14 @@
         const [searchHistory, setSearchHistory] = useLocalStorage('dashboard_search_history_v1', []);
         const [newShortcutTitle, setNewShortcutTitle] = useState('');
         const [newShortcutUrl, setNewShortcutUrl] = useState('');
-        const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v3', []);
+        const [newShortcutGroup, setNewShortcutGroup] = useState('');
+        const [shortcuts, setShortcuts] = useLocalStorage('dashboard_shortcuts_v4', []);
+        const [shortcutGroups] = useLocalStorage('dashboard_shortcut_groups_v1', []);
+        const [widgetOrder, setWidgetOrder] = useLocalStorage('dashboard_widget_order_v1', ['shortcuts', 'weather', 'calendar']);
+        
+        const draggedItem = useRef(null);
+        const draggedOverItem = useRef(null);
+
         const handleSearch = () => {
             const q = searchTerm.trim();
             if (!q) return;
@@ -1196,8 +1491,18 @@
         const handleAddShortcut = () => {
             const url = newShortcutUrl.trim();
             if (!url) { alert('הזן URL'); return; }
-            const title = newShortcutTitle.trim() || url;
-            setShortcuts(prev => [...prev, { title, url }]);
+            let fullUrl = url;
+            if (!/^https?:\/\//i.test(url)) {
+                fullUrl = 'https://' + url;
+            }
+            const title = newShortcutTitle.trim() || getDomainFromUrl(fullUrl);
+            const newShortcut = { 
+                id: Date.now(), 
+                title, 
+                url: fullUrl, 
+                groupId: newShortcutGroup ? parseInt(newShortcutGroup) : null 
+            };
+            setShortcuts(prev => [...prev, newShortcut]);
             setNewShortcutTitle('');
             setNewShortcutUrl('');
         };
@@ -1210,7 +1515,32 @@
             document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
-        }
+        };
+
+        const handleDragSort = () => {
+            const _widgetOrder = [...widgetOrder];
+            const draggedItemContent = _widgetOrder.splice(draggedItem.current, 1)[0];
+            _widgetOrder.splice(draggedOverItem.current, 0, draggedItemContent);
+            draggedItem.current = null;
+            draggedOverItem.current = null;
+            setWidgetOrder(_widgetOrder);
+        };
+        
+        const widgets = {
+            shortcuts: {
+                component: <ShortcutGrid />,
+                className: "w-full lg:flex-grow-[2] lg:w-2/3"
+            },
+            weather: {
+                component: <Weather />,
+                className: "w-full lg:flex-grow-[1] lg:w-1/3"
+            },
+            calendar: {
+                component: <HebrewCalendar />,
+                className: "w-full lg:flex-grow-[1] lg:w-1/3"
+            },
+        };
+
         return (
             <>
                 <div className="flex justify-center gap-2 mb-4">
@@ -1237,20 +1567,161 @@
                     <div className="flex items-center gap-2 flex-wrap justify-center">
                         <Input value={newShortcutTitle} onChange={e => setNewShortcutTitle(e.target.value)} placeholder="שם הקיצור (אופציונלי)" className="w-48"/>
                         <Input value={newShortcutUrl} onChange={e => setNewShortcutUrl(e.target.value)} placeholder="כתובת אינטרנט (URL)" className="w-72"/>
+                        <select 
+                            value={newShortcutGroup}
+                            onChange={e => setNewShortcutGroup(e.target.value)}
+                            className="input-style p-2.5 rounded-xl border"
+                            style={{backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)'}}
+                        >
+                            <option value="">בחר קבוצה</option>
+                            {shortcutGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </select>
                         <MainButton onClick={handleAddShortcut}>הוסף קישור</MainButton>
                         <MainButton onClick={handleExport} className="bg-teal-600 hover:bg-teal-700 text-white">ייצא JSON</MainButton>
                     </div>
                 </Card>
                 <div className="flex flex-col lg:flex-row gap-4 items-start">
-                    <div className="flex-1 w-full lg:min-w-[260px]">
-                        <ShortcutGrid />
-                    </div>
-                    <div className="flex-1 w-full lg:min-w-[260px] flex flex-col gap-4">
-                        <Weather />
-                        <HebrewCalendar />
-                    </div>
+                     {widgetOrder.map((widgetKey, index) => (
+                        <div
+                            key={widgetKey}
+                            className={`${widgets[widgetKey].className} transition-transform duration-300`}
+                            draggable
+                            onDragStart={() => (draggedItem.current = index)}
+                            onDragEnter={() => (draggedOverItem.current = index)}
+                            onDragEnd={handleDragSort}
+                            onDragOver={e => e.preventDefault()}
+                        >
+                            {widgets[widgetKey].component}
+                        </div>
+                    ))}
                 </div>
             </>
+        );
+    };
+
+    const FloatingActionButton = ({ onClick }) => (
+        <button
+            onClick={onClick}
+            className="fixed bottom-6 left-6 z-50 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 transform hover:scale-110"
+            style={{ backgroundColor: 'var(--accent-primary)', color: 'var(--text-on-accent)' }}
+            title="עוזר AI"
+            aria-label="פתח חלון עוזר AI"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15.59L7.41 14H5v-4h2.41L11 6.41V17.59zM16.5 12c0-1.77-1-3.29-2.5-4.03v8.05c1.5-0.73 2.5-2.25 2.5-4.02z" opacity="0.3"/>
+                <path d="M11 6.41L7.41 10H5v4h2.41L11 17.59V6.41M13 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+        </button>
+    );
+
+    const GeminiChat = ({ isOpen, onClose }) => {
+        const [messages, setMessages] = useState([]);
+        const [input, setInput] = useState('');
+        const [isLoading, setIsLoading] = useState(false);
+        const [apiKeyError, setApiKeyError] = useState(false);
+        const aiRef = useRef(null);
+        const messagesEndRef = useRef(null);
+
+        useEffect(() => {
+            try {
+                // This will throw an error if API_KEY is undefined or invalid.
+                if (process.env.API_KEY) {
+                    aiRef.current = new GoogleGenAI({ apiKey: process.env.API_KEY });
+                } else {
+                    throw new Error("API Key is missing.");
+                }
+            } catch (e) {
+                console.error("Gemini AI Initialization Error:", e.message);
+                setApiKeyError(true);
+            }
+        }, []);
+
+        useEffect(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, [messages]);
+
+        const handleSend = async () => {
+            if (!input.trim() || isLoading || apiKeyError) return;
+            const userMessage = { role: 'user', text: input };
+            setMessages(prev => [...prev, userMessage]);
+            setInput('');
+            setIsLoading(true);
+
+            try {
+                const response = await aiRef.current.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: [{ parts: [{ text: input }] }],
+                });
+                
+                const aiMessage = { role: 'model', text: response.text };
+                setMessages(prev => [...prev, aiMessage]);
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                const errorMessage = { role: 'model', text: "שגיאה, לא ניתן היה לקבל תשובה מהשרת." };
+                setMessages(prev => [...prev, errorMessage]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={onClose}>
+                <div 
+                    className="card-style flex flex-col w-full max-w-lg h-[80vh] m-4 overflow-hidden border"
+                    style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <header className="p-4 flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
+                        <h3 className="text-lg font-bold">עוזר AI (Gemini)</h3>
+                        <button onClick={onClose} className="text-2xl hover:opacity-70">&times;</button>
+                    </header>
+                    <main className="flex-1 p-4 overflow-y-auto space-y-4">
+                        {apiKeyError ? (
+                             <div className="p-4 rounded-lg bg-red-100 text-red-800 text-center">
+                                 <strong>שגיאת הגדרה:</strong> מפתח ה-API של Gemini חסר. לא ניתן להשתמש בעוזר ה-AI.
+                             </div>
+                        ) : messages.length === 0 ? (
+                            <div className="text-center p-8 text-gray-500">
+                                <p>שלום! איך אני יכול לעזור לך היום?</p>
+                            </div>
+                        ) : (
+                            messages.map((msg, index) => (
+                                <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`max-w-[80%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-[var(--accent-primary)] text-white rounded-br-none' : 'bg-[var(--bg-input)] rounded-bl-none'}`}>
+                                        <p style={{whiteSpace: 'pre-wrap'}}>{msg.text}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                        {isLoading && (
+                             <div className="flex justify-start">
+                                <div className="max-w-[80%] p-3 rounded-2xl bg-[var(--bg-input)] rounded-bl-none">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
+                                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </main>
+                    <footer className="p-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                        <div className="flex gap-2">
+                            <Input
+                                value={input}
+                                onChange={e => setInput(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                                placeholder={apiKeyError ? "לא זמין" : "שאל אותי משהו..."}
+                                disabled={isLoading || apiKeyError}
+                            />
+                            <MainButton onClick={handleSend} disabled={isLoading || apiKeyError}>שלח</MainButton>
+                        </div>
+                    </footer>
+                </div>
+            </div>
         );
     };
 
@@ -1260,6 +1731,32 @@
         const [background, setBackground] = useLocalStorage('dashboard_bg_v3', PRESET_BACKGROUNDS[0]);
         const [font, setFont] = useState("'Assistant', Arial, sans-serif");
         const [themeName, setThemeName] = useLocalStorage('dashboard_theme_v1', 'light');
+        const [skin, setSkin] = useLocalStorage('dashboard_skin_v1', 'modern');
+        const [layout, setLayout] = useLocalStorage('dashboard_layout_v1', 'classic');
+        const [isChatOpen, setIsChatOpen] = useState(false);
+
+        // --- Data Migration ---
+        useEffect(() => {
+            // Migrate notes from v3 (plain text) to v4 (HTML)
+            const oldNotes = localStorage.getItem('dashboard_notes_v3');
+            const newNotesExist = localStorage.getItem('dashboard_notes_v4_html');
+            if (oldNotes && !newNotesExist) {
+                const parsedOld = JSON.parse(oldNotes);
+                const migrated = `<p>${parsedOld.replace(/\n/g, '</p><p>')}</p>`;
+                localStorage.setItem('dashboard_notes_v4_html', JSON.stringify(migrated));
+            }
+
+            // Migrate shortcuts from v3 to v4 (with groups)
+            const oldShortcuts = localStorage.getItem('dashboard_shortcuts_v3');
+            const newShortcutsExist = localStorage.getItem('dashboard_shortcuts_v4');
+            if (oldShortcuts && !newShortcutsExist) {
+                const parsedOld = JSON.parse(oldShortcuts);
+                const defaultGroup = { id: Date.now(), name: 'קישורים כלליים' };
+                localStorage.setItem('dashboard_shortcut_groups_v1', JSON.stringify([defaultGroup]));
+                const migrated = parsedOld.map(s => ({ ...s, id: Date.now() + Math.random(), groupId: defaultGroup.id }));
+                localStorage.setItem('dashboard_shortcuts_v4', JSON.stringify(migrated));
+            }
+        }, []);
 
         useEffect(() => {
             const theme = THEMES[themeName] || THEMES.light;
@@ -1294,25 +1791,40 @@
             }
         }, [background]);
         
+        const mainContent = (
+            <div className="flex-1 flex flex-col p-4 overflow-y-auto h-full">
+                <PageHeader />
+                <main className="flex-1">
+                    <Panel id={Tab.Home} activeTab={activeTab}><HomePanel /></Panel>
+                    <Panel id={Tab.Tools} activeTab={activeTab}><ToolsPanel /></Panel>
+                    <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel /></Panel>
+                    <Panel id={Tab.History} activeTab={activeTab}><HistoryPanel /></Panel>
+                    <Panel id={Tab.Design} activeTab={activeTab}><DesignPanel setFont={setFont} setBackground={setBackground} themeName={themeName} setThemeName={setThemeName} skin={skin} setSkin={setSkin} layout={layout} setLayout={setLayout} /></Panel>
+                    <Panel id={Tab.Map} activeTab={activeTab}><MapPanel /></Panel>
+                    <Panel id={Tab.News} activeTab={activeTab}><NewsPanel /></Panel>
+                    <Panel id={Tab.Music} activeTab={activeTab}><MusicPanel /></Panel>
+                </main>
+                <footer className="text-center mt-3 font-semibold" style={{color: 'var(--text-secondary)'}}>
+                    עוצב ע"י שי לבל
+                </footer>
+            </div>
+        );
+
         return (
-            <div className="flex h-screen w-screen bg-transparent">
-                <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-                <div className="flex-1 flex flex-col p-4 overflow-y-auto h-full">
-                    <PageHeader />
-                    <main className="flex-1">
-                        <Panel id={Tab.Home} activeTab={activeTab}><HomePanel /></Panel>
-                        <Panel id={Tab.Tools} activeTab={activeTab}><ToolsPanel /></Panel>
-                        <Panel id={Tab.Personal} activeTab={activeTab}><PersonalPanel /></Panel>
-                        <Panel id={Tab.History} activeTab={activeTab}><HistoryPanel /></Panel>
-                        <Panel id={Tab.Design} activeTab={activeTab}><DesignPanel setFont={setFont} setBackground={setBackground} themeName={themeName} setThemeName={setThemeName} /></Panel>
-                        <Panel id={Tab.Map} activeTab={activeTab}><MapPanel /></Panel>
-                        <Panel id={Tab.News} activeTab={activeTab}><NewsPanel /></Panel>
-                        <Panel id={Tab.Music} activeTab={activeTab}><MusicPanel /></Panel>
-                    </main>
-                    <footer className="text-center mt-3 font-semibold" style={{color: 'var(--text-secondary)'}}>
-                        עוצב ע"י שי לבל
-                    </footer>
-                </div>
+            <div className={`h-screen w-screen bg-transparent flex ${layout === 'classic' ? 'flex-row' : 'flex-col'}`} data-skin={skin}>
+                {layout === 'classic' ? (
+                    <>
+                        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+                        {mainContent}
+                    </>
+                ) : (
+                    <>
+                        <TopNavBar activeTab={activeTab} setActiveTab={setActiveTab} />
+                        {mainContent}
+                    </>
+                )}
+                <FloatingActionButton onClick={() => setIsChatOpen(true)} />
+                <GeminiChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
             </div>
         );
     };
@@ -1332,5 +1844,3 @@
   </script>
 </body>
 </html>
-
-
