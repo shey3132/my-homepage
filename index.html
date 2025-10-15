@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>דף הבית</title>
+  <title>דף הבית שלי</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Added Babel for in-browser JSX transpilation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -907,12 +906,22 @@
             </Card>
         );
     };
+    const WEATHER_REGIONS = {
+        'תל אביב': { lat: 32.0853, lon: 34.7818 },
+        'ירושלים': { lat: 31.7683, lon: 35.2137 },
+        'חיפה': { lat: 32.7940, lon: 34.9896 },
+        'באר שבע': { lat: 31.2530, lon: 34.7915 },
+        'אילת': { lat: 29.5577, lon: 34.9519 },
+        'צפת': { lat: 32.9647, lon: 35.4975 },
+        'טבריה': { lat: 32.7922, lon: 35.5312 },
+    };
     const Weather = () => {
-        const [weatherData, setWeatherData] = useLocalStorage('dashboard_weather_data_v2', null);
-        const [lastFetch, setLastFetch] = useLocalStorage('dashboard_weather_fetch_v2', 0);
-        const [loading, setLoading] = useState(false);
+        const [selectedRegion, setSelectedRegion] = useLocalStorage('dashboard_weather_region_v1', 'תל אביב');
+        const [weatherData, setWeatherData] = useLocalStorage('dashboard_weather_data_v1', null);
+        const [lastFetch, setLastFetch] = useLocalStorage('dashboard_weather_fetch_v1', 0);
+        const [loading, setLoading] = useState(true);
         const [error, setError] = useState(null);
-        
+
         const getWeatherInfo = (code) => {
             if (code === 0) return { icon: '☀️', description: 'שמיים בהירים' };
             if (code >= 1 && code <= 3) return { icon: '🌤️', description: 'מעונן חלקית' };
@@ -923,114 +932,109 @@
             if (code >= 95 && code <= 99) return { icon: '⛈️', description: 'סופת רעמים' };
             return { icon: '🌍', description: 'לא ידוע' };
         };
-        
-        const fetchWeather = useCallback(() => {
+
+        const fetchWeather = useCallback(async () => {
             setLoading(true);
             setError(null);
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    try {
-                        const { latitude, longitude } = position.coords;
-                        const [geoRes, weatherRes] = await Promise.all([
-                            fetch(`https://geocode.maps.co/reverse?lat=${latitude}&lon=${longitude}`),
-                            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`)
-                        ]);
-                        if (!geoRes.ok) throw new Error('לא ניתן היה לקבל את שם העיר.');
-                        const geoData = await geoRes.json();
-                        const city = geoData.address?.city || geoData.address?.town || geoData.address?.village || 'מיקום נוכחי';
-                        if (!weatherRes.ok) throw new Error('לא ניתן היה לקבל נתוני מזג אוויר.');
-                        const weatherApiData = await weatherRes.json();
-                        const formattedData = {
-                            city,
-                            current: {
-                                temperature: Math.round(weatherApiData.current.temperature_2m),
-                                ...getWeatherInfo(weatherApiData.current.weather_code)
-                            },
-                            forecast: weatherApiData.daily.time.slice(1).map((date, index) => ({
-                                date: new Date(date).toLocaleDateString('he-IL', { weekday: 'short' }),
-                                maxTemp: Math.round(weatherApiData.daily.temperature_2m_max[index + 1]),
-                                minTemp: Math.round(weatherApiData.daily.temperature_2m_min[index + 1]),
-                                ...getWeatherInfo(weatherApiData.daily.weather_code[index + 1])
-                            }))
-                        };
-                        setWeatherData(formattedData);
-                        setLastFetch(Date.now());
-                    } catch (e) {
-                        setError(e.message || 'שגיאה בקבלת נתונים.');
-                        console.error(e);
-                    } finally {
-                        setLoading(false);
-                    }
-                },
-                (err) => {
-                    setError('נדחתה הרשאת מיקום. לא ניתן להציג מזג אוויר.');
-                    setLoading(false);
+
+            const regionData = WEATHER_REGIONS[selectedRegion];
+            if (!regionData) {
+                setError('אזור לא חוקי נבחר.');
+                setLoading(false);
+                return;
+            }
+            const { lat: latitude, lon: longitude } = regionData;
+
+            try {
+                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`);
+                if (!weatherRes.ok) {
+                    throw new Error(`שגיאת רשת במזג האוויר: ${weatherRes.status}`);
                 }
-            );
-        }, [setWeatherData, setLastFetch]);
+                const weatherApiData = await weatherRes.json();
+                if (!weatherApiData || !weatherApiData.current || !weatherApiData.daily) {
+                    throw new Error('תגובת API של מזג אוויר לא תקינה.');
+                }
+
+                const formattedData = {
+                    city: selectedRegion,
+                    current: {
+                        temperature: Math.round(weatherApiData.current.temperature_2m),
+                        ...getWeatherInfo(weatherApiData.current.weather_code)
+                    },
+                    forecast: weatherApiData.daily.time.slice(1).map((date, index) => ({
+                        date: new Date(date).toLocaleDateString('he-IL', { weekday: 'short' }),
+                        maxTemp: Math.round(weatherApiData.daily.temperature_2m_max[index + 1]),
+                        minTemp: Math.round(weatherApiData.daily.temperature_2m_min[index + 1]),
+                        ...getWeatherInfo(weatherApiData.daily.weather_code[index + 1])
+                    }))
+                };
+                setWeatherData(formattedData);
+                setLastFetch(Date.now());
+            } catch (e) {
+                setError(e.message || 'שגיאה בקבלת נתוני מזג אוויר.');
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        }, [selectedRegion, setWeatherData, setLastFetch]);
 
         useEffect(() => {
             const now = Date.now();
-            if (weatherData && (now - lastFetch > 30 * 60 * 1000)) {
-                fetchWeather(); // Auto-refresh stale data
+            if (!weatherData || weatherData.city !== selectedRegion || (now - lastFetch > 30 * 60 * 1000)) {
+                fetchWeather();
+            } else {
+                setLoading(false);
             }
-        }, [fetchWeather, weatherData, lastFetch]);
-
-        if (loading) {
-            return <Card><div className="text-center p-4">טוען נתוני מזג אוויר...</div></Card>;
-        }
-        
-        if (error) {
-            return (
-                <Card>
-                    <div className="text-center p-4 text-red-600">
-                        <p>{error}</p>
-                        <MainButton onClick={fetchWeather} className="mt-2">נסה שוב</MainButton>
-                    </div>
-                </Card>
-            );
-        }
-        
-        if (!weatherData) {
-            return (
-                <Card className="text-center">
-                    <h3 className="text-lg font-bold mb-3">מזג אוויר</h3>
-                    <p className="mb-4 text-gray-600">לחץ על הכפתור כדי לקבל תחזית עדכנית למיקומך.</p>
-                    <MainButton onClick={fetchWeather}>
-                         <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                         <span>הצג תחזית מזג אוויר</span>
-                    </MainButton>
-                </Card>
-            )
-        }
+        }, [fetchWeather, selectedRegion, weatherData, lastFetch]);
 
         return (
             <Card className="text-right max-w-md mx-auto">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h3 className="text-xl font-bold">{weatherData.city}</h3>
-                        <p className="text-gray-600">{weatherData.current.description}</p>
-                    </div>
-                    <button onClick={fetchWeather} title="רענן" className="text-gray-400 hover:text-gray-700 transition p-1">
-                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" /></svg>
+                <div className="flex justify-between items-start mb-2">
+                    <select
+                        value={selectedRegion}
+                        onChange={e => setSelectedRegion(e.target.value)}
+                        className="text-xl font-bold bg-white/70 border border-black/10 rounded-lg focus:ring-2 focus:ring-blue-400 p-2 cursor-pointer"
+                        aria-label="בחר אזור"
+                        disabled={loading}
+                    >
+                        {Object.keys(WEATHER_REGIONS).map(region => (
+                            <option key={region} value={region}>{region}</option>
+                        ))}
+                    </select>
+                    <button onClick={fetchWeather} title="רענן" className="text-gray-400 hover:text-gray-700 transition p-1 disabled:opacity-50 disabled:cursor-wait" disabled={loading}>
+                         <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" /></svg>
                     </button>
                 </div>
-                <div className="flex items-center justify-center my-4">
-                    <span className="text-7xl">{weatherData.current.icon}</span>
-                    <span className="text-6xl font-bold mr-4">{weatherData.current.temperature}°</span>
-                </div>
-                <div className="flex justify-around text-center mt-4">
-                    {weatherData.forecast.map((day, index) => (
-                        <div key={index} className="flex-1">
-                            <div className="font-bold">{day.date}</div>
-                            <div className="text-3xl my-1">{day.icon}</div>
-                            <div>
-                                <span className="font-semibold">{day.maxTemp}°</span>
-                                <span className="text-gray-500 ml-1">{day.minTemp}°</span>
-                            </div>
+                {loading ? (
+                    <div className="text-center p-8 min-h-[220px] flex items-center justify-center">טוען נתוני מזג אוויר...</div>
+                ) : error ? (
+                    <div className="text-center p-4 min-h-[220px] text-red-600 flex flex-col items-center justify-center">
+                        <p className="mb-3">{error}</p>
+                        <MainButton onClick={fetchWeather}>נסה שוב</MainButton>
+                    </div>
+                ) : weatherData ? (
+                    <>
+                        <p className="text-gray-600 text-right h-6">{weatherData.current.description}</p>
+                        <div className="flex items-center justify-center my-4">
+                            <span className="text-7xl">{weatherData.current.icon}</span>
+                            <span className="text-6xl font-bold mr-4">{weatherData.current.temperature}°</span>
                         </div>
-                    ))}
-                </div>
+                        <div className="flex justify-around text-center mt-4">
+                            {weatherData.forecast.map((day, index) => (
+                                <div key={index} className="flex-1">
+                                    <div className="font-bold">{day.date}</div>
+                                    <div className="text-3xl my-1">{day.icon}</div>
+                                    <div>
+                                        <span className="font-semibold">{day.maxTemp}°</span>
+                                        <span className="text-gray-500 ml-1">{day.minTemp}°</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                     <div className="text-center p-4 min-h-[220px] flex items-center justify-center">לא ניתן היה לטעון את נתוני מזג האוויר.</div>
+                )}
             </Card>
         );
     };
@@ -1173,4 +1177,3 @@
   </script>
 </body>
 </html>
-
