@@ -1618,49 +1618,74 @@
     );
 
     const GeminiChat = ({ isOpen, onClose }) => {
+        const [apiKey, setApiKey] = useLocalStorage('gemini_api_key_v1', '');
+        const [tempApiKey, setTempApiKey] = useState('');
         const [messages, setMessages] = useState([]);
         const [input, setInput] = useState('');
         const [isLoading, setIsLoading] = useState(false);
-        const [apiKeyError, setApiKeyError] = useState(false);
-        const aiRef = useRef(null);
+        const [error, setError] = useState('');
         const messagesEndRef = useRef(null);
 
-        useEffect(() => {
+        const ai = useMemo(() => {
+            if (!apiKey) return null;
             try {
-                // This will throw an error if API_KEY is undefined or invalid.
-                if (process.env.API_KEY) {
-                    aiRef.current = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                } else {
-                    throw new Error("API Key is missing.");
-                }
+                // Clear previous errors when a new key is successfully used
+                setError('');
+                return new GoogleGenAI({ apiKey });
             } catch (e) {
-                console.error("Gemini AI Initialization Error:", e.message);
-                setApiKeyError(true);
+                console.error("Failed to initialize GoogleGenAI:", e);
+                setError('מפתח API לא תקין. אנא בדוק את המפתח שהזנת.');
+                setApiKey(''); // Clear bad key
+                return null;
             }
-        }, []);
+        }, [apiKey, setApiKey]);
 
         useEffect(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }, [messages]);
+        
+        const handleSaveApiKey = () => {
+            const keyToSave = tempApiKey.trim();
+            if (keyToSave) {
+                setApiKey(keyToSave);
+                setTempApiKey('');
+            } else {
+                setError('אנא הזן מפתח API.');
+            }
+        };
+        
+        const handleClearKey = () => {
+            if (window.confirm('האם אתה בטוח שברצונך להחליף את מפתח ה-API? השיחה הנוכחית תימחק.')) {
+              setApiKey('');
+              setMessages([]);
+              setError('');
+            }
+        }
 
         const handleSend = async () => {
-            if (!input.trim() || isLoading || apiKeyError) return;
+            if (!input.trim() || isLoading || !ai) return;
             const userMessage = { role: 'user', text: input };
             setMessages(prev => [...prev, userMessage]);
+            const currentInput = input;
             setInput('');
             setIsLoading(true);
 
             try {
-                const response = await aiRef.current.models.generateContent({
+                const response = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
-                    contents: [{ parts: [{ text: input }] }],
+                    contents: [{ parts: [{ text: currentInput }] }],
                 });
                 
                 const aiMessage = { role: 'model', text: response.text };
                 setMessages(prev => [...prev, aiMessage]);
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                const errorMessage = { role: 'model', text: "שגיאה, לא ניתן היה לקבל תשובה מהשרת." };
+            } catch (err) {
+                console.error("Gemini API Error:", err);
+                let errorMessageText = "שגיאה, לא ניתן היה לקבל תשובה מהשרת.";
+                if (err.message && (err.message.includes('API key not valid') || err.message.includes('permission') || err.message.includes('API_KEY_INVALID'))) {
+                    errorMessageText = 'מפתח ה-API אינו תקין או שאין לו הרשאות מתאימות. אנא בדוק את המפתח ונסה שוב.';
+                    setApiKey(''); // Clear the invalid key to force re-entry
+                }
+                const errorMessage = { role: 'model', text: errorMessageText };
                 setMessages(prev => [...prev, errorMessage]);
             } finally {
                 setIsLoading(false);
@@ -1669,23 +1694,45 @@
 
         if (!isOpen) return null;
 
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={onClose}>
-                <div 
-                    className="card-style flex flex-col w-full max-w-lg h-[80vh] m-4 overflow-hidden border"
-                    style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
-                    onClick={e => e.stopPropagation()}
-                >
-                    <header className="p-4 flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
-                        <h3 className="text-lg font-bold">עוזר AI (Gemini)</h3>
-                        <button onClick={onClose} className="text-2xl hover:opacity-70">&times;</button>
-                    </header>
+        const renderContent = () => {
+            if (!ai || !apiKey) {
+                return (
+                    <div className="flex-1 p-6 flex flex-col justify-center items-center text-center">
+                        <h4 className="text-xl font-bold mb-3">ברוכים הבאים לעוזר ה-AI</h4>
+                        <p className="mb-4" style={{color: 'var(--text-secondary)'}}>
+                            כדי להתחיל, יש להזין מפתח API אישי של Google Gemini.
+                            התהליך הוא חינמי ומהיר.
+                        </p>
+                        <a 
+                            href="https://aistudio.google.com/" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-[var(--accent-primary)] hover:underline mb-4 font-semibold"
+                        >
+                            לחץ כאן כדי להנפיק מפתח API
+                        </a>
+                        <div className="w-full max-w-sm">
+                            <Input
+                                type="password"
+                                value={tempApiKey}
+                                onChange={e => setTempApiKey(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSaveApiKey()}
+                                placeholder="הדבק את מפתח ה-API כאן"
+                                className="text-center"
+                            />
+                            <MainButton onClick={handleSaveApiKey} className="mt-2 w-full">
+                                שמור והתחל שיחה
+                            </MainButton>
+                             {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <>
                     <main className="flex-1 p-4 overflow-y-auto space-y-4">
-                        {apiKeyError ? (
-                             <div className="p-4 rounded-lg bg-red-100 text-red-800 text-center">
-                                 <strong>שגיאת הגדרה:</strong> מפתח ה-API של Gemini חסר. לא ניתן להשתמש בעוזר ה-AI.
-                             </div>
-                        ) : messages.length === 0 ? (
+                        {messages.length === 0 ? (
                             <div className="text-center p-8 text-gray-500">
                                 <p>שלום! איך אני יכול לעזור לך היום?</p>
                             </div>
@@ -1717,12 +1764,31 @@
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleSend()}
-                                placeholder={apiKeyError ? "לא זמין" : "שאל אותי משהו..."}
-                                disabled={isLoading || apiKeyError}
+                                placeholder="שאל אותי משהו..."
+                                disabled={isLoading}
                             />
-                            <MainButton onClick={handleSend} disabled={isLoading || apiKeyError}>שלח</MainButton>
+                            <MainButton onClick={handleSend} disabled={isLoading}>שלח</MainButton>
                         </div>
                     </footer>
+                </>
+            );
+        };
+        
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={onClose}>
+                <div 
+                    className="card-style flex flex-col w-full max-w-lg h-[80vh] m-4 overflow-hidden border"
+                    style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <header className="p-4 flex justify-between items-center border-b" style={{ borderColor: 'var(--border-color)' }}>
+                        <h3 className="text-lg font-bold">עוזר AI (Gemini)</h3>
+                        <div className="flex items-center gap-4">
+                           {apiKey && <button onClick={handleClearKey} className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent-primary)] font-semibold">החלף מפתח</button>}
+                           <button onClick={onClose} className="text-2xl hover:opacity-70">&times;</button>
+                        </div>
+                    </header>
+                    {renderContent()}
                 </div>
             </div>
         );
