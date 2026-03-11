@@ -1,104 +1,46 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  LayoutDashboard, 
-  History as HistoryIcon, 
-  Users, 
   Phone, 
+  Users, 
+  History as HistoryIcon, 
+  LayoutDashboard, 
   Plus, 
-  Trash2, 
-  RefreshCcw,
-  Activity,
-  ChevronRight
+  ChevronRight,
+  Trash2,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ref, onValue, push, set, remove, runTransaction } from 'firebase/database';
+import { ref, onValue, set, push, remove, runTransaction } from 'firebase/database';
 import { db } from './firebase';
-import { Call, Session, Statistics, Phonebook, View } from './types';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { motion, AnimatePresence } from 'motion/react';
+import { Call, Session, Phonebook, View } from './types';
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen bg-bg-dark text-white p-10 text-center">
-          <h1 className="text-4xl font-black text-fire mb-4 italic uppercase">SYSTEM ERROR</h1>
-          <p className="text-gray-400 mb-8">אירעה שגיאה בלתי צפויה במערכת. אנא רענן את הדף.</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="btn-primary px-8 py-3 rounded-xl font-bold uppercase"
-          >
-            רענן דף
-          </button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
+function cn(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(' ');
 }
 
 export default function App() {
-  return (
-    <ErrorBoundary>
-      <AppContent />
-    </ErrorBoundary>
-  );
-}
-
-function AppContent() {
   const [view, setView] = useState<View>('dashboard');
-  const [phonebook, setPhonebook] = useState<Phonebook>({});
-  const [statistics, setStatistics] = useState<Statistics>({});
-  const [history, setHistory] = useState<Session[]>([]);
   const [liveCalls, setLiveCalls] = useState<Call[]>([]);
+  const [phonebook, setPhonebook] = useState<Phonebook>({});
+  const [statistics, setStatistics] = useState<Record<string, number>>({});
+  const [history, setHistory] = useState<Session[]>([]);
   const [apiToken, setApiToken] = useState('097642194:*5473');
-  const [toast, setToast] = useState<string | null>(null);
-  
-  // Form states
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+  const [sparks, setSparks] = useState<{id: number, left: string, delay: string, duration: string}[]>([]);
 
-  const activeSessionsRef = useRef<{ [id: string]: Session }>({});
+  const activeSessionsRef = useRef<Record<string, Session>>({});
 
-  // Sparks background
-  const sparks = useMemo(() => {
-    return Array.from({ length: 60 }).map((_, i) => ({
+  useEffect(() => {
+    // Generate sparks
+    setSparks(Array.from({ length: 40 }).map((_, i) => ({
       id: i,
       left: `${Math.random() * 100}vw`,
       delay: `${Math.random() * 10}s`,
-      duration: `${Math.random() * 8 + 8}s`,
-    }));
+      duration: `${Math.random() * 5 + 5}s`
+    })));
   }, []);
 
   useEffect(() => {
@@ -197,7 +139,7 @@ function AppContent() {
     const interval = setInterval(updateCalls, 2000);
     updateCalls();
     return () => clearInterval(interval);
-  }, [apiToken, phonebook]); // Re-run if token or phonebook changes
+  }, [apiToken, phonebook]);
 
   const addContact = () => {
     const phone = contactPhone.replace(/[^0-9]/g, '');
@@ -236,7 +178,7 @@ function AppContent() {
   }, [statistics]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-bg-dark text-gray-100 font-sans" dir="rtl">
+    <div className="flex h-screen w-full overflow-hidden bg-bg-dark text-gray-100 font-sans grid-bg" dir="rtl">
       {/* Sparks Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {sparks.map(spark => (
@@ -253,89 +195,89 @@ function AppContent() {
       </div>
 
       {/* Sidebar */}
-      <aside className="sidebar w-[280px] h-full flex flex-col z-50">
-        <div className="p-10 flex flex-col items-center">
-          <div className="relative">
-            <div className="absolute inset-0 blur-2xl bg-orange-600/20 rounded-full"></div>
+      <aside className="sidebar w-[300px] h-full flex flex-col z-50 shadow-[20px_0_50px_rgba(0,0,0,0.8)]">
+        <div className="p-12 flex flex-col items-center border-b border-white/5">
+          <div className="relative group">
+            <div className="absolute inset-0 blur-3xl bg-orange-600/30 rounded-full group-hover:bg-orange-600/50 transition-all"></div>
             <img 
               src="https://raw.githubusercontent.com/shey3132/-22/refs/heads/main/image__1_-removebg-preview.png" 
               alt="Logo" 
-              className="w-36 relative drop-shadow-2xl"
+              className="w-40 relative drop-shadow-[0_0_20px_rgba(255,77,0,0.5)]"
               referrerPolicy="no-referrer"
             />
           </div>
-          <h2 className="text-2xl font-black mt-6 tracking-tighter">
-            בוערים <span className="text-orange-500 italic">3.0</span>
+          <h2 className="text-4xl font-display mt-8 tracking-tighter text-fire italic">
+            בוערים <span className="text-orange-500">3.0</span>
           </h2>
         </div>
 
-        <nav className="flex-1 mt-6 space-y-2">
+        <nav className="flex-1 mt-10">
           <NavItem 
             active={view === 'dashboard'} 
             onClick={() => setView('dashboard')}
-            icon={<LayoutDashboard className="w-5 h-5" />}
-            label="לוח בקרה"
+            icon={<LayoutDashboard className="w-6 h-6" />}
+            label="DASHBOARD"
           />
           <NavItem 
             active={view === 'history'} 
             onClick={() => setView('history')}
-            icon={<HistoryIcon className="w-5 h-5" />}
-            label="היסטוריית שיחות"
+            icon={<HistoryIcon className="w-6 h-6" />}
+            label="HISTORY"
           />
           <NavItem 
             active={view === 'contacts'} 
             onClick={() => setView('contacts')}
-            icon={<Users className="w-5 h-5" />}
-            label="אנשי קשר"
+            icon={<Users className="w-6 h-6" />}
+            label="CONTACTS"
           />
         </nav>
 
-        <div className="p-8">
-          <div className="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-3">
-            <div className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+        <div className="p-10 border-t border-white/5">
+          <div className="bg-orange-600/5 p-5 border border-orange-500/20 flex items-center gap-4">
+            <div className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
             </div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">חיבור פעיל</span>
+            <span className="text-[11px] font-black text-orange-500 uppercase tracking-[0.3em]">LIVE CONNECTION</span>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-10 z-10 bg-gradient-to-br from-orange-600/5 via-transparent to-red-600/3">
+      <main className="flex-1 overflow-y-auto p-16 z-10">
         <AnimatePresence mode="wait">
           {view === 'dashboard' && (
             <motion.div 
               key="dashboard"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-10"
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              className="space-y-16"
             >
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-end border-b-4 border-white pb-10">
                 <div>
-                  <h1 className="text-8xl font-black tracking-tighter text-fire italic uppercase leading-[0.8]">DASHBOARD</h1>
-                  <div className="flex items-center gap-3 mt-4">
-                    <span className="h-px w-12 bg-orange-600"></span>
-                    <p className="text-orange-500 font-black text-[11px] uppercase tracking-[0.4em]">Real-time Network Monitor v3.0</p>
+                  <h1 className="text-[120px] text-fire leading-none">MONITOR</h1>
+                  <div className="flex items-center gap-4 mt-4">
+                    <Zap className="w-5 h-5 text-orange-500 fill-orange-500" />
+                    <p className="text-orange-500 font-black text-sm uppercase tracking-[0.5em]">Real-time Network Intelligence</p>
                   </div>
                 </div>
-                <div className="flex gap-6">
-                  <StatCard label='סה"כ כניסות' value={totalEntries} />
-                  <StatCard label="שיחות פעילות" value={liveCalls.length} highlight />
+                <div className="flex gap-10">
+                  <StatCard label="TOTAL ENTRIES" value={totalEntries} />
+                  <StatCard label="ACTIVE CALLS" value={liveCalls.length} highlight />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <div className="lg:col-span-8 space-y-6">
-                  <div className="flex items-center gap-3">
-                    <span className="w-1.5 h-6 bg-orange-600 rounded-full"></span>
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">שידור חי</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+                <div className="lg:col-span-8 space-y-10">
+                  <div className="flex items-center gap-4">
+                    <div className="h-8 w-2 bg-orange-500"></div>
+                    <h3 className="text-xl font-black text-white uppercase tracking-widest italic">Live Stream</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 gap-6">
                     {liveCalls.length === 0 ? (
-                      <div className="col-span-full py-24 text-center border border-dashed border-white/10 rounded-[32px] bg-white/[0.01]">
-                        <p className="text-gray-700 text-xs font-bold uppercase tracking-widest italic">ממתין לשיחות נכנסות...</p>
+                      <div className="py-32 text-center border-2 border-dashed border-white/10 bg-white/[0.02]">
+                        <p className="text-gray-700 text-sm font-black uppercase tracking-[0.4em] italic">Waiting for incoming data packets...</p>
                       </div>
                     ) : (
                       liveCalls.map((call: Call) => (
@@ -350,33 +292,27 @@ function AppContent() {
                 </div>
 
                 <div className="lg:col-span-4">
-                  <div className="glass-card p-8">
-                    <div className="flex justify-between items-center mb-8">
-                      <h3 className="text-xs font-black text-white uppercase tracking-widest">דירוג שלוחות</h3>
+                  <div className="glass-card p-10 brutalist-border">
+                    <div className="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
+                      <h3 className="text-sm font-black text-white uppercase tracking-[0.3em]">Path Ranking</h3>
                       <button 
                         onClick={resetStats}
-                        className="text-[10px] font-bold text-red-900 hover:text-red-500 transition-colors"
+                        className="text-[10px] font-black text-orange-900 hover:text-orange-500 transition-colors uppercase"
                       >
-                        איפוס נתונים
+                        Reset Data
                       </button>
                     </div>
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                       {sortedStats.length === 0 ? (
-                        <p className="text-center text-gray-700 text-[10px] font-bold py-8">אין נתונים בסטטיסטיקה</p>
+                        <p className="text-center text-gray-800 text-xs font-black py-10 uppercase italic">No statistics available</p>
                       ) : (
                         sortedStats.map(stat => (
-                          <div key={stat.path} className="space-y-2">
-                            <div className="flex justify-between items-end px-1">
-                              <span className="text-[11px] font-black text-white/70 uppercase">שלוחה {stat.path}</span>
-                              <span className="text-sm font-black text-orange-500">{stat.count}</span>
+                          <div key={stat.path} className="space-y-3">
+                            <div className="flex justify-between items-end">
+                              <span className="text-xs font-black text-white/50 uppercase tracking-widest">Path {stat.path}</span>
+                              <span className="text-xl font-display text-orange-500">{stat.count}</span>
                             </div>
-                            <div className="stat-bar">
-                              <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${stat.perc}%` }}
-                                className="stat-fill" 
-                              />
-                            </div>
+                            <div className="stat-bar"><motion.div initial={{ width: 0 }} animate={{ width: `${stat.perc}%` }} className="stat-fill" /></div>
                           </div>
                         ))
                       )}
@@ -390,62 +326,62 @@ function AppContent() {
           {view === 'history' && (
             <motion.div 
               key="history"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              className="space-y-12"
             >
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-end border-b-4 border-white pb-10">
                 <div>
-                  <h1 className="text-5xl font-black italic text-fire uppercase">HISTORY</h1>
-                  <p className="text-orange-500 font-bold text-[10px] uppercase tracking-widest mt-2">תיעוד מלא של תעבורת הרשת</p>
+                  <h1 className="text-[120px] text-fire leading-none">LOGS</h1>
+                  <p className="text-orange-500 font-black text-sm uppercase tracking-[0.5em] mt-4">Full session history archive</p>
                 </div>
                 <button 
                   onClick={clearHistory}
-                  className="bg-red-950/30 text-red-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-red-600 hover:text-white transition-all border border-red-900/20"
+                  className="btn-primary px-10 py-5 text-sm"
                 >
-                  מחק היסטוריה
+                  Clear Archive
                 </button>
               </div>
-              <div className="glass-card overflow-hidden">
+              <div className="glass-card brutalist-border overflow-hidden">
                 <table className="w-full text-right">
-                  <thead className="bg-white/[0.03] border-b border-white/5">
+                  <thead className="bg-white/[0.05] border-b-2 border-orange-500/20">
                     <tr>
-                      <th className="p-5 text-[10px] font-black text-gray-500 uppercase tracking-widest">מבקר / מזהה</th>
-                      <th className="p-5 text-[10px] font-black text-gray-500 uppercase tracking-widest">מסלול בתוך המערכת</th>
-                      <th className="p-5 text-[10px] font-black text-gray-500 uppercase tracking-widest">זמן כניסה</th>
-                      <th className="p-5 text-[10px] font-black text-gray-500 uppercase tracking-widest">משך שהייה</th>
+                      <th className="p-8 text-xs font-black text-gray-500 uppercase tracking-widest">Visitor ID</th>
+                      <th className="p-8 text-xs font-black text-gray-500 uppercase tracking-widest">Network Path</th>
+                      <th className="p-8 text-xs font-black text-gray-500 uppercase tracking-widest">Entry Time</th>
+                      <th className="p-8 text-xs font-black text-gray-500 uppercase tracking-widest">Duration</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm">
                     {history.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="p-24 text-center text-gray-800 font-bold italic uppercase tracking-widest">
-                          ההיסטוריה ריקה לחלוטין
+                        <td colSpan={4} className="p-32 text-center text-gray-800 font-black italic uppercase tracking-[0.4em]">
+                          Archive is empty
                         </td>
                       </tr>
                     ) : (
                       history.map((doc, idx) => (
-                        <tr key={idx} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                          <td className="p-6">
-                            <div className="font-black text-white text-base">{doc.name || 'לא ידוע'}</div>
-                            <div className="text-[10px] text-gray-600 font-mono tracking-tighter">{doc.callerId}</div>
+                        <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                          <td className="p-8">
+                            <div className="font-black text-white text-xl leading-none mb-2">{doc.name || 'לא ידוע'}</div>
+                            <div className="text-xs text-orange-500 font-mono font-bold">{doc.callerId}</div>
                           </td>
-                          <td className="p-6">
-                            <div className="flex flex-wrap gap-2 items-center">
+                          <td className="p-8">
+                            <div className="flex flex-wrap gap-3 items-center">
                               {doc.paths.map((p, i) => (
                                 <React.Fragment key={i}>
                                   <span className="path-tag">{p}</span>
-                                  {i < doc.paths.length - 1 && <ChevronRight className="w-3 h-3 text-gray-800" />}
+                                  {i < doc.paths.length - 1 && <ChevronRight className="w-4 h-4 text-orange-900" />}
                                 </React.Fragment>
                               ))}
                             </div>
                           </td>
-                          <td className="p-6 text-xs font-bold text-gray-500">
-                            {new Date(doc.startTime).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                          <td className="p-8 text-sm font-black text-gray-500">
+                            {new Date(doc.startTime).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                           </td>
-                          <td className="p-6">
-                            <span className="bg-orange-500/10 text-orange-500 border border-orange-500/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase">
+                          <td className="p-8">
+                            <span className="bg-orange-500 text-black px-4 py-1 font-black text-xs">
                               {Math.floor((doc.duration || 0) / 1000)}s
                             </span>
                           </td>
@@ -461,61 +397,64 @@ function AppContent() {
           {view === 'contacts' && (
             <motion.div 
               key="contacts"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="space-y-10"
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="space-y-16"
             >
-              <h1 className="text-5xl font-black italic text-fire uppercase">CONTACTS</h1>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="glass-card p-10">
-                  <h3 className="text-xl font-black text-orange-500 mb-8 uppercase">רישום איש קשר</h3>
-                  <div className="space-y-5">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-500 uppercase px-1">שם מלא</label>
+              <h1 className="text-[120px] text-fire leading-none">DATABASE</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                <div className="glass-card p-12 brutalist-border">
+                  <h3 className="text-2xl font-black text-orange-500 mb-10 uppercase italic">Add Entry</h3>
+                  <div className="space-y-8">
+                    <div className="space-y-3">
+                      <label className="text-xs font-black text-gray-500 uppercase tracking-widest">Full Name</label>
                       <input 
                         type="text" 
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
-                        placeholder="הכנס שם..." 
-                        className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm focus:border-orange-500 outline-none transition-all placeholder:text-gray-700"
+                        placeholder="IDENTIFY VISITOR..." 
+                        className="w-full bg-black border-2 border-white/10 p-5 text-sm focus:border-orange-500 outline-none transition-all placeholder:text-gray-800 font-black"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-500 uppercase px-1">מספר טלפון</label>
+                    <div className="space-y-3">
+                      <label className="text-xs font-black text-gray-500 uppercase tracking-widest">Phone Number</label>
                       <input 
                         type="text" 
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
-                        placeholder="0500000000" 
-                        className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm focus:border-orange-500 outline-none transition-all placeholder:text-gray-700 font-mono"
+                        placeholder="05XXXXXXXX" 
+                        className="w-full bg-black border-2 border-white/10 p-5 text-sm focus:border-orange-500 outline-none transition-all placeholder:text-gray-800 font-mono font-bold"
                       />
                     </div>
                     <button 
                       onClick={addContact}
-                      className="w-full btn-primary py-5 rounded-2xl font-black uppercase text-sm mt-4 flex items-center justify-center gap-2"
+                      className="w-full btn-primary py-6 text-lg flex items-center justify-center gap-4"
                     >
-                      <Plus className="w-4 h-4" />
-                      שמור במאגר
+                      <Plus className="w-6 h-6" />
+                      Commit to Database
                     </button>
                   </div>
                 </div>
-                <div className="glass-card p-10 flex flex-col justify-between">
+                <div className="glass-card p-12 brutalist-border flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xl font-black text-white mb-2 uppercase">הגדרות API</h3>
-                    <p className="text-gray-500 text-xs mb-8">ניהול מפתח גישה מול שרתי Call2All</p>
-                    <div className="bg-black/60 p-6 rounded-2xl border border-white/5 shadow-inner">
-                      <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Access Token</label>
+                    <h3 className="text-2xl font-black text-white mb-4 uppercase italic">API Configuration</h3>
+                    <p className="text-gray-600 text-sm mb-12 font-bold uppercase tracking-widest leading-relaxed">Secure access gateway to Call2All network infrastructure.</p>
+                    <div className="bg-black p-8 border-2 border-orange-900/20">
+                      <label className="text-[10px] text-orange-900 font-black uppercase tracking-[0.4em] mb-4 block">System Access Token</label>
                       <input 
                         type="password" 
                         value={apiToken}
                         onChange={(e) => setApiToken(e.target.value)}
-                        className="w-full bg-transparent border-b border-orange-900/40 py-3 text-sm outline-none focus:border-orange-500 font-mono text-orange-500" 
+                        className="w-full bg-transparent border-b-2 border-orange-900/40 py-4 text-xl outline-none focus:border-orange-500 font-mono text-orange-500 font-bold" 
                         dir="ltr"
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-700 italic mt-8 text-center uppercase tracking-tighter">Powered by Buerim Tech Engine v3.0</p>
+                  <div className="mt-12 pt-8 border-t border-white/5 flex justify-between items-center">
+                    <span className="text-[10px] text-gray-800 font-black uppercase tracking-widest">Engine v3.0 // Fire Edition</span>
+                    <RefreshCw className="w-4 h-4 text-orange-900 animate-spin-slow" />
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -527,10 +466,10 @@ function AppContent() {
       <AnimatePresence>
         {toast && (
           <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-10 left-10 bg-white text-black font-black px-10 py-4 rounded-2xl shadow-2xl z-[100] border-t-4 border-orange-500"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            className="fixed top-10 right-10 bg-orange-500 text-black font-black px-12 py-6 shadow-[10px_10px_0px_#000] z-[100] border-2 border-black"
           >
             {toast}
           </motion.div>
@@ -545,14 +484,16 @@ function NavItem({ active, onClick, icon, label }: { active: boolean, onClick: (
     <div 
       onClick={onClick} 
       className={cn(
-        "nav-item flex items-center gap-4 py-4 px-8 cursor-pointer transition-all duration-300 border-r-4",
+        "nav-item flex items-center gap-6 py-6 px-12 cursor-pointer transition-all duration-300",
         active 
-          ? "text-white bg-gradient-to-l from-orange-600/20 to-transparent border-orange-500 font-bold" 
-          : "text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5"
+          ? "active text-white font-black" 
+          : "text-gray-600 hover:text-orange-500"
       )}
     >
-      {icon}
-      <span className="text-sm">{label}</span>
+      <div className={cn("transition-transform duration-300", active && "scale-125 text-orange-500")}>
+        {icon}
+      </div>
+      <span className="text-sm font-black tracking-[0.2em]">{label}</span>
     </div>
   );
 }
@@ -560,21 +501,18 @@ function NavItem({ active, onClick, icon, label }: { active: boolean, onClick: (
 function StatCard({ label, value, highlight }: { label: string, value: number | string, highlight?: boolean }) {
   return (
     <div className={cn(
-      "glass-card px-10 py-6 text-center min-w-[180px] relative overflow-hidden group",
-      highlight && "border-orange-500/30"
+      "glass-card px-12 py-8 text-center min-w-[200px] brutalist-border",
+      highlight && "bg-orange-600/10"
     )}>
-      {highlight && (
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-600/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-      )}
       <span className={cn(
-        "block text-5xl font-black relative z-10 tracking-tighter",
+        "block text-6xl font-display leading-none mb-2",
         highlight ? "text-orange-500" : "text-white"
       )}>
         {value}
       </span>
       <span className={cn(
-        "text-[10px] font-black uppercase tracking-[0.2em] mt-2 block relative z-10",
-        highlight ? "text-orange-400" : "text-gray-500"
+        "text-[10px] font-black uppercase tracking-[0.3em]",
+        highlight ? "text-orange-400" : "text-gray-600"
       )}>
         {label}
       </span>
@@ -582,31 +520,31 @@ function StatCard({ label, value, highlight }: { label: string, value: number | 
   );
 }
 
-function CallCard({ call, name }: { call: Call, name: string, key?: string | number }) {
+function CallCard({ call, name }: { call: Call, name: string }) {
   const isKnown = name !== 'מבקר לא מזוהה';
   
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, scale: 0.9, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
       className={cn(
-        "glass-card p-8 flex justify-between items-center border-l-[8px] group",
-        isKnown ? "border-l-orange-500" : "border-l-white/5"
+        "glass-card p-10 flex justify-between items-center border-r-[12px] group",
+        isKnown ? "border-r-orange-500" : "border-r-white/10"
       )}
     >
-      <div className="flex items-center gap-6">
-        <div className="w-16 h-16 rounded-[24px] bg-white/5 flex items-center justify-center text-orange-500 border border-white/5 shadow-inner group-hover:scale-110 transition-transform duration-500">
-          <Phone className="w-8 h-8" />
+      <div className="flex items-center gap-8">
+        <div className="w-20 h-20 bg-black flex items-center justify-center text-orange-500 border-2 border-orange-500/20 group-hover:border-orange-500 transition-all duration-500">
+          <Phone className="w-10 h-10" />
         </div>
         <div>
-          <div className="font-black text-white text-2xl leading-none tracking-tight mb-1">{name}</div>
-          <div className="text-xs text-orange-500 font-mono font-bold tracking-widest opacity-70">{call.callerIdNum}</div>
+          <div className="font-black text-white text-4xl leading-none tracking-tighter mb-2 uppercase italic">{name}</div>
+          <div className="text-sm text-orange-500 font-mono font-bold tracking-[0.2em] opacity-60">{call.callerIdNum}</div>
         </div>
       </div>
-      <div className="text-left bg-black/60 px-6 py-3 rounded-2xl border border-white/5">
-        <div className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] mb-1">שלוחה פעילה</div>
-        <div className="text-lg font-black text-white italic tracking-tighter">{call.path || 'ראשי'}</div>
+      <div className="text-left bg-black px-8 py-4 border-2 border-white/5">
+        <div className="text-[10px] text-gray-600 font-black uppercase tracking-[0.3em] mb-2">Active Path</div>
+        <div className="text-2xl font-display text-white italic">{call.path || 'ראשי'}</div>
       </div>
     </motion.div>
   );
