@@ -8,12 +8,15 @@ import {
   ChevronRight,
   Trash2,
   RefreshCw,
-  Zap
+  Zap,
+  ListOrdered,
+  PhoneOff,
+  UserMinus
 } from 'lucide-react';
 import { ref, onValue, set, push, remove, runTransaction } from 'firebase/database';
 import { db } from './firebase';
 import { motion, AnimatePresence } from 'motion/react';
-import { Call, Session, Phonebook, View } from './types';
+import { Call, Session, Phonebook, View, QueueEntry } from './types';
 
 function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(' ');
@@ -22,10 +25,12 @@ function cn(...classes: (string | boolean | undefined)[]) {
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [liveCalls, setLiveCalls] = useState<Call[]>([]);
+  const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
   const [phonebook, setPhonebook] = useState<Phonebook>({});
   const [statistics, setStatistics] = useState<Record<string, number>>({});
   const [history, setHistory] = useState<Session[]>([]);
   const [apiToken, setApiToken] = useState('097642194:*5473');
+  const [queuePath, setQueuePath] = useState('ivr2:/1');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [toast, setToast] = useState<string | null>(null);
@@ -35,11 +40,11 @@ export default function App() {
 
   useEffect(() => {
     // Generate sparks
-    setSparks(Array.from({ length: 40 }).map((_, i) => ({
+    setSparks(Array.from({ length: 50 }).map((_, i) => ({
       id: i,
       left: `${Math.random() * 100}vw`,
       delay: `${Math.random() * 10}s`,
-      duration: `${Math.random() * 5 + 5}s`
+      duration: `${Math.random() * 8 + 8}s`
     })));
   }, []);
 
@@ -78,7 +83,7 @@ export default function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const processTracking = (calls: Call[]) => {
+  const processTracking = React.useCallback((calls: Call[]) => {
     const now = Date.now();
     const liveIds = new Set(calls.map(c => c.id));
     const activeSessions = activeSessionsRef.current;
@@ -119,19 +124,58 @@ export default function App() {
         }
       }
     });
-  };
+  }, [phonebook]);
 
-  const updateCalls = async () => {
+  const updateCalls = React.useCallback(async () => {
     if (!apiToken) return;
     try {
-      const res = await fetch(`/api/proxy/calls?token=${encodeURIComponent(apiToken)}`);
-      const data = await res.json();
-      const calls = Array.isArray(data) ? data : (data.calls || []);
-      
-      setLiveCalls(calls);
-      processTracking(calls);
+      // Fetch Live Calls
+      const resCalls = await fetch(`/api/proxy/calls?token=${encodeURIComponent(apiToken)}`);
+      if (resCalls.ok) {
+        const data = await resCalls.json();
+        const calls = Array.isArray(data) ? data : (data.calls || []);
+        setLiveCalls(calls);
+        processTracking(calls);
+      }
+
+      // Fetch Queue
+      if (queuePath) {
+        const resQueue = await fetch(`/api/proxy/queue?token=${encodeURIComponent(apiToken)}&queuePath=${encodeURIComponent(queuePath)}`);
+        if (resQueue.ok) {
+          const data = await resQueue.json();
+          setQueueEntries(data.entries || []);
+        }
+      }
     } catch (e) {
       console.error("Fetch Error:", e);
+    }
+  }, [apiToken, queuePath, processTracking]);
+
+  const hangupCall = async (id: string) => {
+    try {
+      const res = await fetch(`/api/proxy/hangup?token=${encodeURIComponent(apiToken)}&ids=${id}`);
+      if (res.ok) {
+        showToast("📵 שיחה נותקה בהצלחה");
+        updateCalls();
+      }
+    } catch (e) {
+      console.error("Hangup Error:", e);
+    }
+  };
+
+  const kickFromQueue = async (id: string) => {
+    try {
+      const res = await fetch(`/api/proxy/queue-kick`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: apiToken, callIds: [id] })
+      });
+      if (res.ok) {
+        showToast("🚪 הוצא מהתור ונותק");
+        updateCalls();
+      }
+    } catch (e) {
+      console.error("Kick Error:", e);
     }
   };
 
@@ -139,7 +183,7 @@ export default function App() {
     const interval = setInterval(updateCalls, 2000);
     updateCalls();
     return () => clearInterval(interval);
-  }, [apiToken, phonebook]);
+  }, [updateCalls]);
 
   const addContact = () => {
     const phone = contactPhone.replace(/[^0-9]/g, '');
@@ -178,7 +222,7 @@ export default function App() {
   }, [statistics]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-bg-dark text-gray-100 font-sans grid-bg" dir="rtl">
+    <div className="flex h-screen w-full overflow-hidden bg-bg-dark text-gray-100 font-sans main-bg" dir="rtl">
       {/* Sparks Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {sparks.map(spark => (
@@ -195,89 +239,109 @@ export default function App() {
       </div>
 
       {/* Sidebar */}
-      <aside className="sidebar w-[300px] h-full flex flex-col z-50 shadow-[20px_0_50px_rgba(0,0,0,0.8)]">
-        <div className="p-12 flex flex-col items-center border-b border-white/5">
-          <div className="relative group">
-            <div className="absolute inset-0 blur-3xl bg-orange-600/30 rounded-full group-hover:bg-orange-600/50 transition-all"></div>
+      <aside className="sidebar w-[280px] h-full flex flex-col z-50">
+        <div className="p-10 flex flex-col items-center">
+          <div className="relative">
+            <div className="absolute inset-0 blur-2xl bg-orange-600/20 rounded-full"></div>
             <img 
               src="https://raw.githubusercontent.com/shey3132/-22/refs/heads/main/image__1_-removebg-preview.png" 
               alt="Logo" 
-              className="w-40 relative drop-shadow-[0_0_20px_rgba(255,77,0,0.5)]"
+              className="w-36 relative drop-shadow-2xl"
               referrerPolicy="no-referrer"
             />
           </div>
-          <h2 className="text-4xl font-display mt-8 tracking-tighter text-fire italic">
-            בוערים <span className="text-orange-500">3.0</span>
+          <h2 className="text-2xl font-black mt-6 tracking-tighter">
+            בוערים <span className="text-orange-500 italic">3.0</span>
           </h2>
         </div>
 
-        <nav className="flex-1 mt-10">
-          <NavItem 
-            active={view === 'dashboard'} 
-            onClick={() => setView('dashboard')}
-            icon={<LayoutDashboard className="w-6 h-6" />}
-            label="DASHBOARD"
-          />
-          <NavItem 
-            active={view === 'history'} 
-            onClick={() => setView('history')}
-            icon={<HistoryIcon className="w-6 h-6" />}
-            label="HISTORY"
-          />
-          <NavItem 
-            active={view === 'contacts'} 
-            onClick={() => setView('contacts')}
-            icon={<Users className="w-6 h-6" />}
-            label="CONTACTS"
-          />
+        <nav className="flex-1 mt-6 space-y-2">
+          <div 
+            onClick={() => setView('dashboard')} 
+            className={cn("nav-item", view === 'dashboard' && "active")}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            לוח בקרה
+          </div>
+          <div 
+            onClick={() => setView('queues')} 
+            className={cn("nav-item", view === 'queues' && "active")}
+          >
+            <ListOrdered className="w-5 h-5" />
+            ניהול תורים
+          </div>
+          <div 
+            onClick={() => setView('history')} 
+            className={cn("nav-item", view === 'history' && "active")}
+          >
+            <HistoryIcon className="w-5 h-5" />
+            היסטוריית שיחות
+          </div>
+          <div 
+            onClick={() => setView('contacts')} 
+            className={cn("nav-item", view === 'contacts' && "active")}
+          >
+            <Users className="w-5 h-5" />
+            אנשי קשר
+          </div>
         </nav>
 
-        <div className="p-10 border-t border-white/5">
-          <div className="bg-orange-600/5 p-5 border border-orange-500/20 flex items-center gap-4">
-            <div className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+        <div className="p-8">
+          <div className="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-3">
+            <div className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
             </div>
-            <span className="text-[11px] font-black text-orange-500 uppercase tracking-[0.3em]">LIVE CONNECTION</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">חיבור פעיל</span>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-16 z-10">
+      <main className="flex-1 overflow-y-auto p-10 z-10">
         <AnimatePresence mode="wait">
           {view === 'dashboard' && (
             <motion.div 
               key="dashboard"
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 50 }}
-              className="space-y-16"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-10"
             >
-              <div className="flex justify-between items-end border-b-4 border-white pb-10">
+              <div className="flex justify-between items-center">
                 <div>
-                  <h1 className="text-[120px] text-fire leading-none">MONITOR</h1>
-                  <div className="flex items-center gap-4 mt-4">
-                    <Zap className="w-5 h-5 text-orange-500 fill-orange-500" />
-                    <p className="text-orange-500 font-black text-sm uppercase tracking-[0.5em]">Real-time Network Intelligence</p>
+                  <h1 className="text-6xl font-black tracking-tighter text-fire italic uppercase">DASHBOARD</h1>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="h-px w-8 bg-orange-600"></span>
+                    <p className="text-orange-500 font-bold text-[10px] uppercase tracking-[0.3em]">Real-time Network Monitor</p>
                   </div>
                 </div>
-                <div className="flex gap-10">
-                  <StatCard label="TOTAL ENTRIES" value={totalEntries} />
-                  <StatCard label="ACTIVE CALLS" value={liveCalls.length} highlight />
+                <div className="flex gap-6">
+                  <div className="glass-card px-10 py-5 text-center min-w-[160px]">
+                    <span className="block text-4xl font-black text-white">{totalEntries}</span>
+                    <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest mt-1">סה"כ כניסות</span>
+                  </div>
+                  <div className="glass-card px-10 py-5 text-center min-w-[160px] bg-orange-600/5 border-orange-600/20">
+                    <span className="block text-4xl font-black text-orange-500">{liveCalls.length}</span>
+                    <span className="text-[9px] text-orange-400 font-black uppercase tracking-widest mt-1">שיחות פעילות</span>
+                  </div>
+                  <div className="glass-card px-10 py-5 text-center min-w-[160px] bg-yellow-600/5 border-yellow-600/20">
+                    <span className="block text-4xl font-black text-yellow-500">{queueEntries.length}</span>
+                    <span className="text-[9px] text-yellow-400 font-black uppercase tracking-widest mt-1">ממתינים בתור</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                <div className="lg:col-span-8 space-y-10">
-                  <div className="flex items-center gap-4">
-                    <div className="h-8 w-2 bg-orange-500"></div>
-                    <h3 className="text-xl font-black text-white uppercase tracking-widest italic">Live Stream</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div className="lg:col-span-8 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <span className="w-1.5 h-6 bg-orange-600 rounded-full"></span>
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">שידור חי</h3>
                   </div>
-                  <div className="grid grid-cols-1 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {liveCalls.length === 0 ? (
-                      <div className="py-32 text-center border-2 border-dashed border-white/10 bg-white/[0.02]">
-                        <p className="text-gray-700 text-sm font-black uppercase tracking-[0.4em] italic">Waiting for incoming data packets...</p>
+                      <div className="col-span-full py-24 text-center border border-dashed border-white/10 rounded-[32px] bg-white/[0.01]">
+                        <p className="text-gray-700 text-xs font-bold uppercase tracking-widest italic">ממתין לשיחות נכנסות...</p>
                       </div>
                     ) : (
                       liveCalls.map((call: Call) => (
@@ -285,6 +349,7 @@ export default function App() {
                           key={call.id} 
                           call={call} 
                           name={phonebook[call.callerIdNum] || 'מבקר לא מזוהה'} 
+                          onHangup={() => hangupCall(call.id)}
                         />
                       ))
                     )}
@@ -292,27 +357,33 @@ export default function App() {
                 </div>
 
                 <div className="lg:col-span-4">
-                  <div className="glass-card p-10 brutalist-border">
-                    <div className="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
-                      <h3 className="text-sm font-black text-white uppercase tracking-[0.3em]">Path Ranking</h3>
+                  <div className="glass-card p-8">
+                    <div className="flex justify-between items-center mb-8">
+                      <h3 className="text-xs font-black text-white uppercase tracking-widest">דירוג שלוחות</h3>
                       <button 
                         onClick={resetStats}
-                        className="text-[10px] font-black text-orange-900 hover:text-orange-500 transition-colors uppercase"
+                        className="text-[10px] font-bold text-red-900 hover:text-red-500 transition-colors"
                       >
-                        Reset Data
+                        איפוס נתונים
                       </button>
                     </div>
-                    <div className="space-y-8">
+                    <div className="space-y-6">
                       {sortedStats.length === 0 ? (
-                        <p className="text-center text-gray-800 text-xs font-black py-10 uppercase italic">No statistics available</p>
+                        <p className="text-center text-gray-700 text-[10px] font-bold py-8">אין נתונים בסטטיסטיקה</p>
                       ) : (
                         sortedStats.map(stat => (
-                          <div key={stat.path} className="space-y-3">
-                            <div className="flex justify-between items-end">
-                              <span className="text-xs font-black text-white/50 uppercase tracking-widest">Path {stat.path}</span>
-                              <span className="text-xl font-display text-orange-500">{stat.count}</span>
+                          <div key={stat.path} className="space-y-2">
+                            <div className="flex justify-between items-end px-1">
+                              <span className="text-[11px] font-black text-white/70 uppercase">שלוחה {stat.path}</span>
+                              <span className="text-sm font-black text-orange-500">{stat.count}</span>
                             </div>
-                            <div className="stat-bar"><motion.div initial={{ width: 0 }} animate={{ width: `${stat.perc}%` }} className="stat-fill" /></div>
+                            <div className="stat-bar">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${stat.perc}%` }}
+                                className="stat-fill" 
+                              />
+                            </div>
                           </div>
                         ))
                       )}
@@ -323,65 +394,127 @@ export default function App() {
             </motion.div>
           )}
 
+          {view === 'queues' && (
+            <motion.div 
+              key="queues"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-10"
+            >
+              <div className="flex justify-between items-end">
+                <div>
+                  <h1 className="text-5xl font-black italic text-fire uppercase">QUEUE MANAGEMENT</h1>
+                  <p className="text-orange-500 font-bold text-[10px] uppercase tracking-widest mt-2">ניהול תורים וניתוק שיחות בזמן אמת</p>
+                </div>
+                <div className="glass-card p-4 flex items-center gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">נתיב התור</label>
+                    <input 
+                      type="text" 
+                      value={queuePath}
+                      onChange={(e) => setQueuePath(e.target.value)}
+                      className="bg-transparent border-b border-white/10 text-xs outline-none focus:border-orange-500 py-1 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6">
+                {queueEntries.length === 0 ? (
+                  <div className="py-24 text-center border border-dashed border-white/10 rounded-[32px] bg-white/[0.01]">
+                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest italic">אין ממתינים בתור כרגע</p>
+                  </div>
+                ) : (
+                  queueEntries.map((entry) => (
+                    <div key={entry.id} className="glass-card p-6 flex justify-between items-center">
+                      <div className="flex items-center gap-6">
+                        <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 font-black">
+                          {entry.position}
+                        </div>
+                        <div>
+                          <div className="font-black text-white text-lg">{phonebook[entry.callerIdNum] || 'ממתין לא מזוהה'}</div>
+                          <div className="text-xs text-orange-500 font-mono">{entry.callerIdNum}</div>
+                        </div>
+                        <div className="h-10 w-px bg-white/5"></div>
+                        <div>
+                          <div className="text-[8px] text-gray-500 font-black uppercase">זמן כניסה</div>
+                          <div className="text-xs font-bold text-white">{entry.enterTime}</div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => kickFromQueue(entry.id)}
+                        className="flex items-center gap-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase transition-all border border-red-600/20"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                        הוצא ונתק
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {view === 'history' && (
             <motion.div 
               key="history"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
-              className="space-y-12"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-8"
             >
-              <div className="flex justify-between items-end border-b-4 border-white pb-10">
+              <div className="flex justify-between items-end">
                 <div>
-                  <h1 className="text-[120px] text-fire leading-none">LOGS</h1>
-                  <p className="text-orange-500 font-black text-sm uppercase tracking-[0.5em] mt-4">Full session history archive</p>
+                  <h1 className="text-5xl font-black italic text-fire uppercase">HISTORY</h1>
+                  <p className="text-orange-500 font-bold text-[10px] uppercase tracking-widest mt-2">תיעוד מלא של תעבורת הרשת</p>
                 </div>
                 <button 
                   onClick={clearHistory}
-                  className="btn-primary px-10 py-5 text-sm"
+                  className="bg-red-950/30 text-red-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-red-600 hover:text-white transition-all border border-red-900/20"
                 >
-                  Clear Archive
+                  מחק היסטוריה
                 </button>
               </div>
-              <div className="glass-card brutalist-border overflow-hidden">
+              <div className="glass-card overflow-hidden">
                 <table className="w-full text-right">
-                  <thead className="bg-white/[0.05] border-b-2 border-orange-500/20">
+                  <thead className="bg-white/[0.03] border-b border-white/5">
                     <tr>
-                      <th className="p-8 text-xs font-black text-gray-500 uppercase tracking-widest">Visitor ID</th>
-                      <th className="p-8 text-xs font-black text-gray-500 uppercase tracking-widest">Network Path</th>
-                      <th className="p-8 text-xs font-black text-gray-500 uppercase tracking-widest">Entry Time</th>
-                      <th className="p-8 text-xs font-black text-gray-500 uppercase tracking-widest">Duration</th>
+                      <th className="p-5 text-[10px] font-black text-gray-500 uppercase tracking-widest">מבקר / מזהה</th>
+                      <th className="p-5 text-[10px] font-black text-gray-500 uppercase tracking-widest">מסלול בתוך המערכת</th>
+                      <th className="p-5 text-[10px] font-black text-gray-500 uppercase tracking-widest">זמן כניסה</th>
+                      <th className="p-5 text-[10px] font-black text-gray-500 uppercase tracking-widest">משך שהייה</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm">
                     {history.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="p-32 text-center text-gray-800 font-black italic uppercase tracking-[0.4em]">
-                          Archive is empty
+                        <td colSpan={4} className="p-24 text-center text-gray-800 font-bold italic uppercase tracking-widest">
+                          ההיסטוריה ריקה לחלוטין
                         </td>
                       </tr>
                     ) : (
                       history.map((doc, idx) => (
-                        <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
-                          <td className="p-8">
-                            <div className="font-black text-white text-xl leading-none mb-2">{doc.name || 'לא ידוע'}</div>
-                            <div className="text-xs text-orange-500 font-mono font-bold">{doc.callerId}</div>
+                        <tr key={idx} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                          <td className="p-6">
+                            <div className="font-black text-white text-base">{doc.name || 'לא ידוע'}</div>
+                            <div className="text-[10px] text-gray-600 font-mono tracking-tighter">{doc.callerId}</div>
                           </td>
-                          <td className="p-8">
-                            <div className="flex flex-wrap gap-3 items-center">
+                          <td className="p-6">
+                            <div className="flex flex-wrap gap-2 items-center">
                               {doc.paths.map((p, i) => (
                                 <React.Fragment key={i}>
                                   <span className="path-tag">{p}</span>
-                                  {i < doc.paths.length - 1 && <ChevronRight className="w-4 h-4 text-orange-900" />}
+                                  {i < doc.paths.length - 1 && <ChevronRight className="w-3 h-3 text-gray-800" />}
                                 </React.Fragment>
                               ))}
                             </div>
                           </td>
-                          <td className="p-8 text-sm font-black text-gray-500">
-                            {new Date(doc.startTime).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          <td className="p-6 text-xs font-bold text-gray-500">
+                            {new Date(doc.startTime).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
                           </td>
-                          <td className="p-8">
-                            <span className="bg-orange-500 text-black px-4 py-1 font-black text-xs">
+                          <td className="p-6">
+                            <span className="bg-orange-500/10 text-orange-500 border border-orange-500/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase">
                               {Math.floor((doc.duration || 0) / 1000)}s
                             </span>
                           </td>
@@ -397,64 +530,61 @@ export default function App() {
           {view === 'contacts' && (
             <motion.div 
               key="contacts"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="space-y-16"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="space-y-10"
             >
-              <h1 className="text-[120px] text-fire leading-none">DATABASE</h1>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                <div className="glass-card p-12 brutalist-border">
-                  <h3 className="text-2xl font-black text-orange-500 mb-10 uppercase italic">Add Entry</h3>
-                  <div className="space-y-8">
-                    <div className="space-y-3">
-                      <label className="text-xs font-black text-gray-500 uppercase tracking-widest">Full Name</label>
+              <h1 className="text-5xl font-black italic text-fire uppercase">CONTACTS</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="glass-card p-10">
+                  <h3 className="text-xl font-black text-orange-500 mb-8 uppercase">רישום איש קשר</h3>
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-gray-500 uppercase px-1">שם מלא</label>
                       <input 
                         type="text" 
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
-                        placeholder="IDENTIFY VISITOR..." 
-                        className="w-full bg-black border-2 border-white/10 p-5 text-sm focus:border-orange-500 outline-none transition-all placeholder:text-gray-800 font-black"
+                        placeholder="הכנס שם..." 
+                        className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm focus:border-orange-500 outline-none transition-all placeholder:text-gray-700"
                       />
                     </div>
-                    <div className="space-y-3">
-                      <label className="text-xs font-black text-gray-500 uppercase tracking-widest">Phone Number</label>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-gray-500 uppercase px-1">מספר טלפון</label>
                       <input 
                         type="text" 
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
-                        placeholder="05XXXXXXXX" 
-                        className="w-full bg-black border-2 border-white/10 p-5 text-sm focus:border-orange-500 outline-none transition-all placeholder:text-gray-800 font-mono font-bold"
+                        placeholder="0500000000" 
+                        className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm focus:border-orange-500 outline-none transition-all placeholder:text-gray-700 font-mono"
                       />
                     </div>
                     <button 
                       onClick={addContact}
-                      className="w-full btn-primary py-6 text-lg flex items-center justify-center gap-4"
+                      className="w-full btn-primary py-5 rounded-2xl font-black uppercase text-sm mt-4 flex items-center justify-center gap-2"
                     >
-                      <Plus className="w-6 h-6" />
-                      Commit to Database
+                      <Plus className="w-4 h-4" />
+                      שמור במאגר
                     </button>
                   </div>
                 </div>
-                <div className="glass-card p-12 brutalist-border flex flex-col justify-between">
+                <div className="glass-card p-10 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-2xl font-black text-white mb-4 uppercase italic">API Configuration</h3>
-                    <p className="text-gray-600 text-sm mb-12 font-bold uppercase tracking-widest leading-relaxed">Secure access gateway to Call2All network infrastructure.</p>
-                    <div className="bg-black p-8 border-2 border-orange-900/20">
-                      <label className="text-[10px] text-orange-900 font-black uppercase tracking-[0.4em] mb-4 block">System Access Token</label>
+                    <h3 className="text-xl font-black text-white mb-2 uppercase">הגדרות API</h3>
+                    <p className="text-gray-500 text-xs mb-8">ניהול מפתח גישה מול שרתי Call2All</p>
+                    <div className="bg-black/60 p-6 rounded-2xl border border-white/5 shadow-inner">
+                      <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Access Token</label>
                       <input 
                         type="password" 
                         value={apiToken}
                         onChange={(e) => setApiToken(e.target.value)}
-                        className="w-full bg-transparent border-b-2 border-orange-900/40 py-4 text-xl outline-none focus:border-orange-500 font-mono text-orange-500 font-bold" 
+                        className="w-full bg-transparent border-b border-orange-900/40 py-3 text-sm outline-none focus:border-orange-500 font-mono text-orange-500" 
                         dir="ltr"
                       />
                     </div>
                   </div>
-                  <div className="mt-12 pt-8 border-t border-white/5 flex justify-between items-center">
-                    <span className="text-[10px] text-gray-800 font-black uppercase tracking-widest">Engine v3.0 // Fire Edition</span>
-                    <RefreshCw className="w-4 h-4 text-orange-900 animate-spin-slow" />
-                  </div>
+                  <p className="text-[10px] text-gray-700 italic mt-8 text-center uppercase tracking-tighter">Powered by Buerim Tech Engine v3.0</p>
                 </div>
               </div>
             </motion.div>
@@ -466,10 +596,10 @@ export default function App() {
       <AnimatePresence>
         {toast && (
           <motion.div 
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-            className="fixed top-10 right-10 bg-orange-500 text-black font-black px-12 py-6 shadow-[10px_10px_0px_#000] z-[100] border-2 border-black"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-10 left-10 bg-white text-black font-black px-10 py-4 rounded-2xl shadow-2xl z-[100] border-t-4 border-orange-500"
           >
             {toast}
           </motion.div>
@@ -479,72 +609,42 @@ export default function App() {
   );
 }
 
-function NavItem({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
-  return (
-    <div 
-      onClick={onClick} 
-      className={cn(
-        "nav-item flex items-center gap-6 py-6 px-12 cursor-pointer transition-all duration-300",
-        active 
-          ? "active text-white font-black" 
-          : "text-gray-600 hover:text-orange-500"
-      )}
-    >
-      <div className={cn("transition-transform duration-300", active && "scale-125 text-orange-500")}>
-        {icon}
-      </div>
-      <span className="text-sm font-black tracking-[0.2em]">{label}</span>
-    </div>
-  );
-}
-
-function StatCard({ label, value, highlight }: { label: string, value: number | string, highlight?: boolean }) {
-  return (
-    <div className={cn(
-      "glass-card px-12 py-8 text-center min-w-[200px] brutalist-border",
-      highlight && "bg-orange-600/10"
-    )}>
-      <span className={cn(
-        "block text-6xl font-display leading-none mb-2",
-        highlight ? "text-orange-500" : "text-white"
-      )}>
-        {value}
-      </span>
-      <span className={cn(
-        "text-[10px] font-black uppercase tracking-[0.3em]",
-        highlight ? "text-orange-400" : "text-gray-600"
-      )}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function CallCard({ call, name }: { call: Call, name: string }) {
+function CallCard({ call, name, onHangup }: { call: Call, name: string, onHangup?: () => void }) {
   const isKnown = name !== 'מבקר לא מזוהה';
   
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        "glass-card p-10 flex justify-between items-center border-r-[12px] group",
+        "glass-card p-6 flex justify-between items-center border-r-[6px] hover:scale-[1.02] transition-transform",
         isKnown ? "border-r-orange-500" : "border-r-white/10"
       )}
     >
-      <div className="flex items-center gap-8">
-        <div className="w-20 h-20 bg-black flex items-center justify-center text-orange-500 border-2 border-orange-500/20 group-hover:border-orange-500 transition-all duration-500">
-          <Phone className="w-10 h-10" />
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-orange-500 border border-white/5 shadow-inner">
+          <Phone className="w-6 h-6" />
         </div>
         <div>
-          <div className="font-black text-white text-4xl leading-none tracking-tighter mb-2 uppercase italic">{name}</div>
-          <div className="text-sm text-orange-500 font-mono font-bold tracking-[0.2em] opacity-60">{call.callerIdNum}</div>
+          <div className="font-black text-white text-lg leading-tight">{name}</div>
+          <div className="text-[11px] text-orange-500 font-mono font-bold tracking-tight">{call.callerIdNum}</div>
         </div>
       </div>
-      <div className="text-left bg-black px-8 py-4 border-2 border-white/5">
-        <div className="text-[10px] text-gray-600 font-black uppercase tracking-[0.3em] mb-2">Active Path</div>
-        <div className="text-2xl font-display text-white italic">{call.path || 'ראשי'}</div>
+      <div className="flex items-center gap-4">
+        <div className="text-left bg-black/40 px-4 py-2 rounded-xl border border-white/5">
+          <div className="text-[8px] text-gray-500 font-black uppercase tracking-widest">שלוחה</div>
+          <div className="text-sm font-black text-white">{call.path || 'ראשי'}</div>
+        </div>
+        {onHangup && (
+          <button 
+            onClick={onHangup}
+            className="p-3 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all border border-red-600/20"
+            title="נתק שיחה"
+          >
+            <PhoneOff className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </motion.div>
   );
