@@ -194,7 +194,7 @@ function AppContent() {
   };
 
   useEffect(() => {
-    const interval = setInterval(updateCalls, 3000);
+    const interval = setInterval(updateCalls, 2000);
     updateCalls();
     return () => clearInterval(interval);
   }, [apiToken, phonebook]); // Re-run if token or phonebook changes
@@ -314,10 +314,10 @@ function AppContent() {
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <h1 className="text-6xl font-black tracking-tighter text-fire italic uppercase">DASHBOARD</h1>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="h-px w-8 bg-orange-600"></span>
-                    <p className="text-orange-500 font-bold text-[10px] uppercase tracking-[0.3em]">Real-time Network Monitor</p>
+                  <h1 className="text-8xl font-black tracking-tighter text-fire italic uppercase leading-[0.8]">DASHBOARD</h1>
+                  <div className="flex items-center gap-3 mt-4">
+                    <span className="h-px w-12 bg-orange-600"></span>
+                    <p className="text-orange-500 font-black text-[11px] uppercase tracking-[0.4em]">Real-time Network Monitor v3.0</p>
                   </div>
                 </div>
                 <div className="flex gap-6">
@@ -560,17 +560,20 @@ function NavItem({ active, onClick, icon, label }: { active: boolean, onClick: (
 function StatCard({ label, value, highlight }: { label: string, value: number | string, highlight?: boolean }) {
   return (
     <div className={cn(
-      "glass-card px-10 py-5 text-center min-w-[160px]",
-      highlight && "bg-orange-600/5 border-orange-600/20"
+      "glass-card px-10 py-6 text-center min-w-[180px] relative overflow-hidden group",
+      highlight && "border-orange-500/30"
     )}>
+      {highlight && (
+        <div className="absolute inset-0 bg-gradient-to-b from-orange-600/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+      )}
       <span className={cn(
-        "block text-4xl font-black",
+        "block text-5xl font-black relative z-10 tracking-tighter",
         highlight ? "text-orange-500" : "text-white"
       )}>
         {value}
       </span>
       <span className={cn(
-        "text-[9px] font-black uppercase tracking-widest mt-1",
+        "text-[10px] font-black uppercase tracking-[0.2em] mt-2 block relative z-10",
         highlight ? "text-orange-400" : "text-gray-500"
       )}>
         {label}
@@ -585,25 +588,25 @@ function CallCard({ call, name }: { call: Call, name: string, key?: string | num
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
       className={cn(
-        "glass-card p-6 flex justify-between items-center border-r-[6px] hover:scale-[1.02] transition-transform",
-        isKnown ? "border-r-orange-500" : "border-r-white/10"
+        "glass-card p-8 flex justify-between items-center border-l-[8px] group",
+        isKnown ? "border-l-orange-500" : "border-l-white/5"
       )}
     >
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-orange-500 border border-white/5 shadow-inner">
-          <Phone className="w-6 h-6" />
+      <div className="flex items-center gap-6">
+        <div className="w-16 h-16 rounded-[24px] bg-white/5 flex items-center justify-center text-orange-500 border border-white/5 shadow-inner group-hover:scale-110 transition-transform duration-500">
+          <Phone className="w-8 h-8" />
         </div>
         <div>
-          <div className="font-black text-white text-lg leading-tight">{name}</div>
-          <div className="text-[11px] text-orange-500 font-mono font-bold tracking-tight">{call.callerIdNum}</div>
+          <div className="font-black text-white text-2xl leading-none tracking-tight mb-1">{name}</div>
+          <div className="text-xs text-orange-500 font-mono font-bold tracking-widest opacity-70">{call.callerIdNum}</div>
         </div>
       </div>
-      <div className="text-left bg-black/40 px-4 py-2 rounded-xl border border-white/5">
-        <div className="text-[8px] text-gray-500 font-black uppercase tracking-widest">שלוחה</div>
-        <div className="text-sm font-black text-white">{call.path || 'ראשי'}</div>
+      <div className="text-left bg-black/60 px-6 py-3 rounded-2xl border border-white/5">
+        <div className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] mb-1">שלוחה פעילה</div>
+        <div className="text-lg font-black text-white italic tracking-tighter">{call.path || 'ראשי'}</div>
       </div>
     </motion.div>
   );
