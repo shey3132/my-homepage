@@ -1,0 +1,66 @@
+import express from "express";
+import { createServer as createViteServer } from "vite";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  // API Proxy for Call2All to bypass CORS
+  app.get("/api/proxy/calls", async (req, res) => {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ error: "Token is required" });
+    }
+
+    try {
+      // Use global fetch (built-in in Node 18+)
+      const response = await fetch(`https://www.call2all.co.il/ym/api/GetIncomingCalls?token=${token}`);
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Proxy Error:", error);
+      res.status(500).json({ error: "Failed to fetch from Call2All" });
+    }
+  });
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+
+    // Serve index.html with Vite transformations
+    app.use("*", async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        let template = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        if (e instanceof Error) {
+          vite.ssrFixStacktrace(e);
+        }
+        next(e);
+      }
+    });
+  } else {
+    app.use(express.static("dist"));
+    app.get("*", (req, res) => {
+      res.sendFile("dist/index.html", { root: "." });
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
