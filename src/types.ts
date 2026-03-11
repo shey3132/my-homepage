@@ -21,4 +21,11 @@ export interface Phonebook {
   [phone: string]: string;
 }
 
-export type View = 'dashboard' | 'history' | 'contacts';
+export interface QueueEntry {
+  id: string;
+  callerIdNum: string;
+  enterTime: string;
+  position: number;
+}
+
+export type View = 'dashboard' | 'history' | 'contacts' | 'queues';
