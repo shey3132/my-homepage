@@ -86,28 +86,34 @@ async function startServer() {
   // API Proxy for Call2All to bypass CORS
   app.get("/api/proxy/calls", async (req, res) => {
     const { token } = req.query;
-    if (!token) {
-      return res.status(400).json({ error: "Token is required" });
-    }
+    if (!token) return res.status(400).json({ error: "Token is required" });
 
     try {
-      console.log(`[Proxy] Fetching calls for token: ${token}`);
-      const params = new URLSearchParams({ token: token as string });
-      const response = await fetch(`https://www.call2all.co.il/ym/api/GetIncomingCalls?${params.toString()}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      // We build the URL manually to ensure the token format is exactly what Call2All expects
+      const url = `https://www.call2all.co.il/ym/api/GetIncomingCalls?token=${token}`;
+      console.log(`[Proxy] Requesting: ${url}`);
+
+      const response = await fetch(url, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'application/json, text/plain, */*'
+        }
       });
       
-      if (!response.ok) {
-        console.error(`[Proxy] Call2All API error: ${response.status} ${response.statusText}`);
-        return res.status(response.status).json({ error: "Call2All API error" });
-      }
+      const rawText = await response.text();
+      console.log(`[Proxy] Raw Response (first 500 chars): ${rawText.substring(0, 500)}`);
 
-      const data = await response.json();
-      console.log(`[Proxy] Received data from Call2All:`, JSON.stringify(data).substring(0, 200));
-      res.json(data);
+      // Try to parse as JSON, if fails, send as text so frontend can handle it
+      try {
+        const data = JSON.parse(rawText);
+        res.json(data);
+      } catch (e) {
+        console.warn("[Proxy] Response is not JSON, sending as raw text");
+        res.json({ rawResponse: rawText, isRaw: true });
+      }
     } catch (error) {
-      console.error("[Proxy] Unexpected Error:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+      console.error("[Proxy] Critical Error:", error);
+      res.status(500).json({ error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
