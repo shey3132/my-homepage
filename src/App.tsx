@@ -133,7 +133,23 @@ export default function App() {
       const resCalls = await fetch(`/api/proxy/calls?token=${encodeURIComponent(apiToken)}`);
       if (resCalls.ok) {
         const data = await resCalls.json();
-        const calls = Array.isArray(data) ? data : (data.calls || []);
+        console.log("Live Calls Raw Data:", data);
+        
+        let calls = [];
+        if (Array.isArray(data)) {
+          calls = data;
+        } else if (data && typeof data === 'object') {
+          // Look for common keys or any array
+          if (data.calls && Array.isArray(data.calls)) {
+            calls = data.calls;
+          } else if (data.ym_incoming_calls && Array.isArray(data.ym_incoming_calls)) {
+            calls = data.ym_incoming_calls;
+          } else {
+            const firstArrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
+            if (firstArrayKey) calls = data[firstArrayKey];
+          }
+        }
+        
         setLiveCalls(calls);
         processTracking(calls);
       }
@@ -143,7 +159,20 @@ export default function App() {
         const resQueue = await fetch(`/api/proxy/queue?token=${encodeURIComponent(apiToken)}&queuePath=${encodeURIComponent(queuePath)}`);
         if (resQueue.ok) {
           const data = await resQueue.json();
-          setQueueEntries(data.entries || []);
+          console.log("Queue Raw Data:", data);
+          
+          let entries = [];
+          if (Array.isArray(data)) {
+            entries = data;
+          } else if (data && typeof data === 'object') {
+            if (data.entries && Array.isArray(data.entries)) {
+              entries = data.entries;
+            } else {
+              const firstArrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
+              if (firstArrayKey) entries = data[firstArrayKey];
+            }
+          }
+          setQueueEntries(entries);
         }
       }
     } catch (e) {
@@ -334,6 +363,31 @@ export default function App() {
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div className="lg:col-span-8 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <span className="w-1.5 h-6 bg-orange-600 rounded-full"></span>
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">הגדרות חיבור</h3>
+                  </div>
+                  <div className="glass-card p-6 flex items-center gap-6">
+                    <div className="flex-1 space-y-2">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">מפתח API (token)</label>
+                      <input 
+                        type="text" 
+                        value={apiToken}
+                        onChange={(e) => setApiToken(e.target.value)}
+                        placeholder="מערכת:סיסמה"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-mono outline-none focus:border-orange-500 transition-all"
+                      />
+                    </div>
+                    <div className="pt-6">
+                      <button 
+                        onClick={updateCalls}
+                        className="p-3 rounded-xl bg-orange-600/10 text-orange-500 hover:bg-orange-600 hover:text-white transition-all border border-orange-600/20"
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-3">
                     <span className="w-1.5 h-6 bg-orange-600 rounded-full"></span>
                     <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">שידור חי</h3>
