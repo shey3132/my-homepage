@@ -31,6 +31,8 @@ export default function App() {
   const [history, setHistory] = useState<Session[]>([]);
   const [apiToken, setApiToken] = useState('097642194:*5473');
   const [queuePath, setQueuePath] = useState('ivr2:/1');
+  const [lastRawResponse, setLastRawResponse] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [toast, setToast] = useState<string | null>(null);
@@ -130,23 +132,35 @@ export default function App() {
     if (!apiToken) return;
     try {
       // Fetch Live Calls
-      const resCalls = await fetch(`/api/proxy/calls?token=${encodeURIComponent(apiToken)}`);
+      const resCalls = await fetch(`/api/proxy/calls?token=${apiToken}`); // Pass token raw
       if (resCalls.ok) {
         const data = await resCalls.json();
-        console.log("Live Calls Raw Data:", data);
+        setLastRawResponse(data);
         
         let calls = [];
-        if (Array.isArray(data)) {
-          calls = data;
-        } else if (data && typeof data === 'object') {
-          // Look for common keys or any array
-          if (data.calls && Array.isArray(data.calls)) {
-            calls = data.calls;
-          } else if (data.ym_incoming_calls && Array.isArray(data.ym_incoming_calls)) {
-            calls = data.ym_incoming_calls;
+        let finalData = data;
+        
+        // If the proxy couldn't parse JSON, it sends { rawResponse: "...", isRaw: true }
+        if (data.isRaw && data.rawResponse) {
+          try {
+            // Try one more time to parse it on frontend, maybe it had some weird characters
+            const cleaned = data.rawResponse.replace(/^\uFEFF/, ''); // Remove BOM
+            finalData = JSON.parse(cleaned);
+          } catch (e) {
+            console.error("Failed to parse raw response on frontend", e);
+          }
+        }
+
+        if (Array.isArray(finalData)) {
+          calls = finalData;
+        } else if (finalData && typeof finalData === 'object') {
+          if (finalData.ym_incoming_calls && Array.isArray(finalData.ym_incoming_calls)) {
+            calls = finalData.ym_incoming_calls;
+          } else if (finalData.calls && Array.isArray(finalData.calls)) {
+            calls = finalData.calls;
           } else {
-            const firstArrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
-            if (firstArrayKey) calls = data[firstArrayKey];
+            const firstArrayKey = Object.keys(finalData).find(key => Array.isArray(finalData[key]));
+            if (firstArrayKey) calls = finalData[firstArrayKey];
           }
         }
         
@@ -378,7 +392,17 @@ export default function App() {
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-mono outline-none focus:border-orange-500 transition-all"
                       />
                     </div>
-                    <div className="pt-6">
+                    <div className="pt-6 flex gap-2">
+                      <button 
+                        onClick={() => setShowDebug(!showDebug)}
+                        className={cn(
+                          "p-3 rounded-xl transition-all border",
+                          showDebug ? "bg-blue-600/20 text-blue-400 border-blue-600/30" : "bg-white/5 text-gray-400 border-white/10"
+                        )}
+                        title="מצב ניפוי שגיאות"
+                      >
+                        <Zap className="w-5 h-5" />
+                      </button>
                       <button 
                         onClick={updateCalls}
                         className="p-3 rounded-xl bg-orange-600/10 text-orange-500 hover:bg-orange-600 hover:text-white transition-all border border-orange-600/20"
@@ -387,6 +411,15 @@ export default function App() {
                       </button>
                     </div>
                   </div>
+
+                  {showDebug && lastRawResponse && (
+                    <div className="glass-card p-6 bg-blue-900/10 border-blue-500/20">
+                      <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4">נתוני API גולמיים (Debug)</h4>
+                      <pre className="text-[10px] font-mono text-blue-300/70 overflow-x-auto max-h-40">
+                        {JSON.stringify(lastRawResponse, null, 2)}
+                      </pre>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-3">
                     <span className="w-1.5 h-6 bg-orange-600 rounded-full"></span>
