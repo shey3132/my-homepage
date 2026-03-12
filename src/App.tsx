@@ -132,36 +132,17 @@ export default function App() {
     if (!apiToken) return;
     try {
       // Fetch Live Calls
-      const resCalls = await fetch(`/api/proxy/calls?token=${apiToken}`); // Pass token raw
+      const resCalls = await fetch(`https://www.call2all.co.il/ym/api/GetIncomingCalls?token=${apiToken}`);
+      
       if (resCalls.ok) {
         const data = await resCalls.json();
         setLastRawResponse(data);
         
         let calls = [];
-        let finalData = data;
-        
-        // If the proxy couldn't parse JSON, it sends { rawResponse: "...", isRaw: true }
-        if (data.isRaw && data.rawResponse) {
-          try {
-            // Try one more time to parse it on frontend, maybe it had some weird characters
-            const cleaned = data.rawResponse.replace(/^\uFEFF/, ''); // Remove BOM
-            finalData = JSON.parse(cleaned);
-          } catch (e) {
-            console.error("Failed to parse raw response on frontend", e);
-          }
-        }
-
-        if (Array.isArray(finalData)) {
-          calls = finalData;
-        } else if (finalData && typeof finalData === 'object') {
-          if (finalData.ym_incoming_calls && Array.isArray(finalData.ym_incoming_calls)) {
-            calls = finalData.ym_incoming_calls;
-          } else if (finalData.calls && Array.isArray(finalData.calls)) {
-            calls = finalData.calls;
-          } else {
-            const firstArrayKey = Object.keys(finalData).find(key => Array.isArray(finalData[key]));
-            if (firstArrayKey) calls = finalData[firstArrayKey];
-          }
+        if (data && data.ym_incoming_calls && Array.isArray(data.ym_incoming_calls)) {
+          calls = data.ym_incoming_calls;
+        } else if (Array.isArray(data)) {
+          calls = data;
         }
         
         setLiveCalls(calls);
@@ -170,21 +151,12 @@ export default function App() {
 
       // Fetch Queue
       if (queuePath) {
-        const resQueue = await fetch(`/api/proxy/queue?token=${encodeURIComponent(apiToken)}&queuePath=${encodeURIComponent(queuePath)}`);
+        const resQueue = await fetch(`https://www.call2all.co.il/ym/api/GetQueueRealTime?token=${apiToken}&queuePath=${queuePath}`);
         if (resQueue.ok) {
           const data = await resQueue.json();
-          console.log("Queue Raw Data:", data);
-          
           let entries = [];
-          if (Array.isArray(data)) {
-            entries = data;
-          } else if (data && typeof data === 'object') {
-            if (data.entries && Array.isArray(data.entries)) {
-              entries = data.entries;
-            } else {
-              const firstArrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
-              if (firstArrayKey) entries = data[firstArrayKey];
-            }
+          if (data && data.entries && Array.isArray(data.entries)) {
+            entries = data.entries;
           }
           setQueueEntries(entries);
         }
@@ -196,7 +168,7 @@ export default function App() {
 
   const hangupCall = async (id: string) => {
     try {
-      const res = await fetch(`/api/proxy/hangup?token=${encodeURIComponent(apiToken)}&ids=${id}`);
+      const res = await fetch(`https://www.call2all.co.il/ym/api/CallAction?token=${apiToken}&ids=${id}&action=set:GOasap=hangup`);
       if (res.ok) {
         showToast("📵 שיחה נותקה בהצלחה");
         updateCalls();
@@ -208,10 +180,10 @@ export default function App() {
 
   const kickFromQueue = async (id: string) => {
     try {
-      const res = await fetch(`/api/proxy/queue-kick`, {
+      const res = await fetch(`https://www.call2all.co.il/ym/api/QueueManagement`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: apiToken, callIds: [id] })
+        body: JSON.stringify({ token: apiToken, callIds: id, action: 'kick', moreData: 'hangup' })
       });
       if (res.ok) {
         showToast("🚪 הוצא מהתור ונותק");
