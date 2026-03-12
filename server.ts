@@ -18,11 +18,15 @@ async function startServer() {
       return res.status(400).json({ error: "Token and queuePath are required" });
     }
     try {
+      console.log(`[Proxy] Fetching queue for token: ${token}, path: ${queuePath}`);
       const params = new URLSearchParams({ token: token as string, queuePath: queuePath as string });
-      const response = await fetch(`https://www.call2all.co.il/ym/api/GetQueueRealTime?${params.toString()}`);
+      const response = await fetch(`https://www.call2all.co.il/ym/api/GetQueueRealTime?${params.toString()}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
       const data = await response.json();
       res.json(data);
     } catch (error) {
+      console.error("[Proxy] Queue error:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -34,15 +38,19 @@ async function startServer() {
       return res.status(400).json({ error: "Token and ids are required" });
     }
     try {
+      console.log(`[Proxy] Hangup for token: ${token}, ids: ${ids}`);
       const params = new URLSearchParams({ 
         token: token as string, 
         ids: ids as string,
         action: "set:GOasap=hangup"
       });
-      const response = await fetch(`https://www.call2all.co.il/ym/api/CallAction?${params.toString()}`);
+      const response = await fetch(`https://www.call2all.co.il/ym/api/CallAction?${params.toString()}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
       const data = await response.json();
       res.json(data);
     } catch (error) {
+      console.error("[Proxy] Hangup error:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -54,9 +62,13 @@ async function startServer() {
       return res.status(400).json({ error: "Token and callIds are required" });
     }
     try {
+      console.log(`[Proxy] Queue Kick for token: ${token}, ids: ${callIds}`);
       const response = await fetch("https://www.call2all.co.il/ym/api/QueueManagement", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
         body: JSON.stringify({
           token,
           callIds,
@@ -67,6 +79,7 @@ async function startServer() {
       const data = await response.json();
       res.json(data);
     } catch (error) {
+      console.error("[Proxy] Kick error:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -80,7 +93,9 @@ async function startServer() {
     try {
       console.log(`[Proxy] Fetching calls for token: ${token}`);
       const params = new URLSearchParams({ token: token as string });
-      const response = await fetch(`https://www.call2all.co.il/ym/api/GetIncomingCalls?${params.toString()}`);
+      const response = await fetch(`https://www.call2all.co.il/ym/api/GetIncomingCalls?${params.toString()}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
       
       if (!response.ok) {
         console.error(`[Proxy] Call2All API error: ${response.status} ${response.statusText}`);
