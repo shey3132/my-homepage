@@ -1,0 +1,6 @@
+{
+  "name": "IVR AI Assistant",
+  "description": "API extension for phone systems to talk with Gemini AI",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
