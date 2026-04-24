@@ -105,9 +105,9 @@ export default function App() {
                 </div>
                 <div className="bg-black/40 p-4 rounded-xl font-mono text-xs text-slate-400 flex-grow border border-slate-800/50 leading-relaxed overflow-x-auto">
                   <p><span className="text-indigo-400">type</span>=api</p>
-                  <p><span className="text-indigo-400">api_link</span>=https://{"{URL}"}/api/ivr</p>
+                  <p><span className="text-indigo-400">api_link</span>=https://my-homepage-pi-ashen.vercel.app/api/ivr</p>
                   <p><span className="text-indigo-400">api_url_post</span>=yes</p>
-                  <p className="border-t border-slate-800 mt-2 pt-2 text-[10px] text-slate-500"># הגדרת קלט</p>
+                  <p className="border-t border-slate-800 mt-2 pt-2 text-[10px] text-slate-500"># הגדרת קלט (חינם = record)</p>
                   <p><span className="text-emerald-400">api_000</span>=userInput,yes,voice,he-IL,yes</p>
                 </div>
                 <div className="flex gap-2 text-[10px] font-bold uppercase tracking-wider">
